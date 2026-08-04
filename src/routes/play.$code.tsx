@@ -1,12 +1,42 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Check, Loader2, RotateCcw, Shuffle, Wand2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  Loader2,
+  MessageSquareQuote,
+  RotateCcw,
+  Shuffle,
+  Volume2,
+  VolumeX,
+  Wand2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { useWakeLock } from "@/hooks/use-wake-lock";
-import { beep, clearWord, drawWord, savedPlayerId } from "@/lib/game";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  clearWord,
+  drawWord,
+  pendingSuggestion,
+  resolveSuggestion,
+  savedPlayerId,
+  useSuggestion,
+  type WordSuggestion,
+} from "@/lib/game";
+import {
+  endSound,
+  revealSound,
+  incomingSound,
+  setSoundEnabled,
+  soundEnabled,
+  tickSound,
+  unlockAudio,
+} from "@/lib/sfx";
+import { setHapticsEnabled } from "@/lib/haptics";
 
 export const Route = createFileRoute("/play/$code")({
   head: () => ({
@@ -20,7 +50,7 @@ export const Route = createFileRoute("/play/$code")({
       { property: "og:title", content: "Mon tour — Devine Tête" },
       {
         property: "og:description",
-        content: "Tire un mot et fais-le deviner à tes amis.",
+        content: "Tire un mot ou laisse un voisin t'en souffler un.",
       },
     ],
   }),
@@ -38,9 +68,22 @@ function Play() {
   const [word, setWord] = useState<string | null>(null);
   const [count, setCount] = useState(5);
   const [busy, setBusy] = useState(false);
+  const [suggestion, setSuggestion] = useState<WordSuggestion | null>(null);
+  const [sound, setSound] = useState(true);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useWakeLock(phase !== "idle");
+
+  useEffect(() => {
+    setSound(soundEnabled());
+  }, []);
+
+  const toggleSound = () => {
+    const next = !sound;
+    setSound(next);
+    setSoundEnabled(next);
+    setHapticsEnabled(next);
+  };
 
   const stopTimer = () => {
     if (timer.current) clearInterval(timer.current);
@@ -49,22 +92,60 @@ function Play() {
 
   const startCountdown = useCallback(() => {
     stopTimer();
+    void unlockAudio();
     setCount(5);
     setPhase("countdown");
+    tickSound(5);
     timer.current = setInterval(() => {
       setCount((current) => {
         if (current <= 1) {
           stopTimer();
-          beep();
+          revealSound();
           setPhase("front");
           return 0;
         }
+        tickSound(current - 1);
         return current - 1;
       });
     }, 1000);
   }, []);
 
   useEffect(() => stopTimer, []);
+
+  // Load and live-watch words whispered by other players.
+  useEffect(() => {
+    if (!playerId) return;
+    let cancelled = false;
+    void pendingSuggestion(playerId)
+      .then((found) => {
+        if (!cancelled) setSuggestion(found);
+      })
+      .catch(() => {});
+
+    const channel = supabase
+      .channel(`suggestions-${playerId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "word_suggestions",
+          filter: `target_player_id=eq.${playerId}`,
+        },
+        (payload) => {
+          const incoming = payload.new as WordSuggestion;
+          if (incoming.status !== "pending") return;
+          setSuggestion(incoming);
+          incomingSound();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      void supabase.removeChannel(channel);
+    };
+  }, [playerId]);
 
   const newWord = async () => {
     setBusy(true);
@@ -78,8 +159,30 @@ function Play() {
     }
   };
 
+  const playSuggestion = async () => {
+    if (!suggestion) return;
+    setBusy(true);
+    try {
+      setWord(await useSuggestion(suggestion, playerId));
+      setSuggestion(null);
+      startCountdown();
+    } catch {
+      toast.error("Impossible d'utiliser ce mot.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const skipSuggestion = async () => {
+    if (!suggestion) return;
+    const id = suggestion.id;
+    setSuggestion(null);
+    await resolveSuggestion(id, "skipped");
+  };
+
   const endTurn = async () => {
     stopTimer();
+    endSound();
     setWord(null);
     setPhase("idle");
     await clearWord(playerId);
@@ -161,7 +264,7 @@ function Play() {
 
   return (
     <main className="party-gradient flex min-h-[100dvh] flex-col px-5 pb-10 pt-6">
-      <header className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
+      <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
         <button
           type="button"
           onClick={() => void navigate({ to: "/room/$code", params: { code: roomCode } })}
@@ -171,9 +274,55 @@ function Play() {
           <ArrowLeft className="size-5" />
         </button>
         <h1 className="truncate text-lg font-bold">Ton tour — {roomCode}</h1>
+        <button
+          type="button"
+          onClick={toggleSound}
+          className="grid size-10 shrink-0 place-items-center rounded-full border border-border bg-card/70 text-muted-foreground"
+          aria-label={sound ? "Couper le son et les vibrations" : "Activer le son et les vibrations"}
+        >
+          {sound ? <Volume2 className="size-5" /> : <VolumeX className="size-5" />}
+        </button>
       </header>
 
       <div className="flex flex-1 flex-col items-center justify-center gap-8 text-center">
+        <AnimatePresence>
+          {suggestion ? (
+            <motion.section
+              key={suggestion.id}
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              className="w-full max-w-sm rounded-3xl border border-accent/50 bg-card/80 p-5 text-left backdrop-blur"
+            >
+              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-accent">
+                <MessageSquareQuote className="size-4" />
+                {suggestion.author_name} te souffle un mot
+              </p>
+              <p className="mt-3 font-display text-2xl font-bold">Mot mystère prêt</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Ne regarde pas : lance le décompte et colle le téléphone sur ton front.
+              </p>
+              <div className="mt-4 flex gap-2">
+                <Button
+                  onClick={() => void playSuggestion()}
+                  disabled={busy}
+                  className="h-12 flex-1 rounded-2xl font-bold"
+                >
+                  Jouer ce mot
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => void skipSuggestion()}
+                  className="h-12 rounded-2xl text-muted-foreground"
+                  aria-label="Refuser ce mot"
+                >
+                  <X className="size-5" />
+                </Button>
+              </div>
+            </motion.section>
+          ) : null}
+        </AnimatePresence>
+
         <p className="max-w-xs text-sm text-muted-foreground">
           Tire un mot, laisse 5 secondes aux autres pour le lire, puis colle le téléphone sur ton
           front.
