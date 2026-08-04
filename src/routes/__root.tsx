@@ -83,24 +83,28 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
       },
-      { title: "Devine Tête — Jeu de soirée" },
+      { title: "Devine Tête — Le jeu de soirée sur ton front" },
       {
         name: "description",
-        content: "Le jeu de soirée où le mot s'affiche sur ton front. Code à 4 lettres, QR code, et c'est parti.",
+        content: "Crée une partie, partage le QR code, colle le téléphone sur ton front et fais deviner. Jeu de soirée gratuit, sans inscription.",
       },
       { name: "theme-color", content: "#08070a" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "Devine Tête" },
-      { property: "og:title", content: "Devine Tête — Jeu de soirée" },
+      { property: "og:title", content: "Devine Tête — Le jeu de soirée sur ton front" },
       {
         property: "og:description",
-        content: "Le jeu de soirée où le mot s'affiche sur ton front.",
+        content: "Crée une partie, partage le QR code, colle le téléphone sur ton front et fais deviner. Jeu de soirée gratuit, sans inscription.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Devine Tête — Le jeu de soirée sur ton front" },
+      { name: "twitter:description", content: "Crée une partie, partage le QR code, colle le téléphone sur ton front et fais deviner. Jeu de soirée gratuit, sans inscription." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6c157208-53c6-4e9c-b7c9-33d8ceb826f5/id-preview-eedc1d69--4f42085c-a243-4bd9-b3e8-fa1b92554119.lovable.app-1785865271384.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6c157208-53c6-4e9c-b7c9-33d8ceb826f5/id-preview-eedc1d69--4f42085c-a243-4bd9-b3e8-fa1b92554119.lovable.app-1785865271384.png" },
     ],
     links: [
       {

@@ -20,7 +20,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "Devine Tête — Le jeu de soirée sur ton front" },
       {
         property: "og:description",
-        content: "Crée une partie, partage le QR code et fais deviner tes amis.",
+        content: "Crée une partie, partage le QR code, colle le téléphone sur ton front et fais deviner. Jeu de soirée gratuit, sans inscription.",
       },
     ],
   }),
