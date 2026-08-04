@@ -24,9 +24,10 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>) => ({
-    room: typeof search['room'] === "string" ? (search['room'] as string).toUpperCase().slice(0, 4) : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { room?: string } => {
+    const raw = search["room"];
+    return typeof raw === "string" ? { room: raw.toUpperCase().slice(0, 4) } : {};
+  },
   component: Home,
 });
 
