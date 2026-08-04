@@ -8,6 +8,17 @@ export type Player = {
   created_at: string;
 };
 
+export type WordSuggestion = {
+  id: string;
+  room_id: string;
+  target_player_id: string;
+  author_player_id: string | null;
+  author_name: string;
+  text: string;
+  status: string;
+  created_at: string;
+};
+
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ";
 const PLAYER_KEY = "dt.player";
 const NAME_KEY = "dt.name";
@@ -131,28 +142,55 @@ export async function clearWord(playerId: string | null) {
   await supabase.from("players").update({ current_word: null }).eq("id", playerId);
 }
 
-export function beep() {
-  try {
-    const Ctx =
-      window.AudioContext ??
-      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (Ctx) {
-      const ctx = new Ctx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "square";
-      osc.frequency.value = 880;
-      gain.gain.setValueAtTime(0.18, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.35);
-      setTimeout(() => void ctx.close(), 600);
-    }
-  } catch {
-    /* audio unavailable */
+export async function sendSuggestion(params: {
+  roomId: string;
+  targetPlayerId: string;
+  authorPlayerId: string | null;
+  authorName: string;
+  text: string;
+}) {
+  const text = params.text.trim();
+  if (text.length < 1 || text.length > 60) {
+    throw new Error("Le mot doit faire entre 1 et 60 caractères.");
   }
-  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-    navigator.vibrate?.([120, 60, 120]);
+  const { error } = await supabase.from("word_suggestions").insert({
+    room_id: params.roomId,
+    target_player_id: params.targetPlayerId,
+    author_player_id: params.authorPlayerId,
+    author_name: params.authorName || "Un voisin",
+    text,
+  });
+  if (error) throw error;
+}
+
+const SUGGESTION_TTL_MS = 10 * 60 * 1000;
+
+/** Latest still-valid suggestion for a player (older than 10 min is ignored). */
+export async function pendingSuggestion(
+  playerId: string | null,
+): Promise<WordSuggestion | null> {
+  if (!playerId) return null;
+  const since = new Date(Date.now() - SUGGESTION_TTL_MS).toISOString();
+  const { data, error } = await supabase
+    .from("word_suggestions")
+    .select("*")
+    .eq("target_player_id", playerId)
+    .eq("status", "pending")
+    .gte("created_at", since)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  return (data?.[0] as WordSuggestion | undefined) ?? null;
+}
+
+export async function resolveSuggestion(id: string, status: "used" | "skipped") {
+  await supabase.from("word_suggestions").update({ status }).eq("id", id);
+}
+
+export async function useSuggestion(suggestion: WordSuggestion, playerId: string | null) {
+  await resolveSuggestion(suggestion.id, "used");
+  if (playerId) {
+    await supabase.from("players").update({ current_word: suggestion.text }).eq("id", playerId);
   }
+  return suggestion.text;
 }
