@@ -1,0 +1,16 @@
+{
+  "name": "Devine Tête — Jeu de soirée",
+  "short_name": "Devine Tête",
+  "description": "Le jeu de soirée où le mot s'affiche sur ton front. Créez une partie, scannez le QR code et devinez !",
+  "start_url": "/",
+  "scope": "/",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#08070a",
+  "theme_color": "#08070a",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
