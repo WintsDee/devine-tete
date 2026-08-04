@@ -35,6 +35,7 @@ import {
   pendingSuggestion,
   resolveSuggestion,
   savedPlayerId,
+  setPlayerWord,
   useSuggestion,
   type WordSuggestion,
 } from "@/lib/game";
