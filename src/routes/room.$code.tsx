@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { findRoom, joinRoom, listPlayers, savedName, savedPlayerId, type Player } from "@/lib/game";
 
-export const Route = createFileRoute("/room/$code")({
+export const Route = createFileRoute("/room/")({
   head: () => ({
     meta: [
       { title: "Salle d'attente — Devine Tête" },

@@ -24,7 +24,7 @@ export const Route = createFileRoute("/play/$code")({
       },
     ],
   }),
-  component: Play;
+  component: Play,
 });
 
 type Phase = "idle" | "countdown" | "front";
