@@ -4,6 +4,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
   Check,
+  EyeOff,
+  Keyboard,
   Loader2,
   MessageSquareQuote,
   RotateCcw,
@@ -16,6 +18,15 @@ import {
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { useWakeLock } from "@/hooks/use-wake-lock";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -24,6 +35,7 @@ import {
   pendingSuggestion,
   resolveSuggestion,
   savedPlayerId,
+  setPlayerWord,
   useSuggestion,
   type WordSuggestion,
 } from "@/lib/game";
@@ -57,7 +69,9 @@ export const Route = createFileRoute("/play/$code")({
   component: Play,
 });
 
-type Phase = "idle" | "countdown" | "front";
+type Phase = "idle" | "countdown" | "front" | "hidden";
+
+const FRONT_SECONDS = 10;
 
 function Play() {
   const { code } = Route.useParams();
@@ -67,9 +81,12 @@ function Play() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [word, setWord] = useState<string | null>(null);
   const [count, setCount] = useState(5);
+  const [frontLeft, setFrontLeft] = useState(FRONT_SECONDS);
   const [busy, setBusy] = useState(false);
   const [suggestion, setSuggestion] = useState<WordSuggestion | null>(null);
   const [sound, setSound] = useState(true);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualWord, setManualWord] = useState("");
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useWakeLock(phase !== "idle");
@@ -94,6 +111,7 @@ function Play() {
     stopTimer();
     void unlockAudio();
     setCount(5);
+    setFrontLeft(FRONT_SECONDS);
     setPhase("countdown");
     tickSound(5);
     timer.current = setInterval(() => {
@@ -111,6 +129,24 @@ function Play() {
   }, []);
 
   useEffect(() => stopTimer, []);
+
+  // While the word is on the forehead, count 10 s down, then hide it.
+  useEffect(() => {
+    if (phase !== "front") return;
+    setFrontLeft(FRONT_SECONDS);
+    const interval = setInterval(() => {
+      setFrontLeft((left) => {
+        if (left <= 1) {
+          clearInterval(interval);
+          endSound();
+          setPhase("hidden");
+          return 0;
+        }
+        return left - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [phase]);
 
   // Load and live-watch words whispered by other players.
   useEffect(() => {
@@ -159,6 +195,16 @@ function Play() {
     }
   };
 
+  const playManualWord = async () => {
+    const text = manualWord.trim();
+    if (!text) return;
+    setManualOpen(false);
+    setManualWord("");
+    setWord(text);
+    startCountdown();
+    if (playerId) await setPlayerWord(playerId, text);
+  };
+
   const playSuggestion = async () => {
     if (!suggestion) return;
     setBusy(true);
@@ -191,6 +237,9 @@ function Play() {
   if (phase === "front" && word) {
     return (
       <main className="flex min-h-[100dvh] flex-col bg-black">
+        <p className="pt-[max(0.75rem,env(safe-area-inset-top))] text-center text-sm font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+          Caché dans {frontLeft} s
+        </p>
         <div className="flex flex-1 items-center justify-center px-6 py-10">
           <motion.p
             key={word}
@@ -210,6 +259,47 @@ function Play() {
           >
             <RotateCcw className="size-4" />
             Relancer
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={newWord}
+            disabled={busy}
+            className="h-14 flex-col gap-1 rounded-xl text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+          >
+            {busy ? <Loader2 className="size-4 animate-spin" /> : <Shuffle className="size-4" />}
+            Nouveau mot
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => void endTurn()}
+            className="h-14 flex-col gap-1 rounded-xl text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+          >
+            <Check className="size-4" />
+            Fin du tour
+          </Button>
+        </div>
+      </main>
+    );
+  }
+
+  if (phase === "hidden") {
+    return (
+      <main className="flex min-h-[100dvh] flex-col bg-black">
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
+          <EyeOff className="size-10 text-muted-foreground" />
+          <p className="font-display text-3xl font-bold">Mot caché</p>
+          <p className="max-w-xs text-sm text-muted-foreground">
+            Tu peux reprendre ton téléphone : personne ne voit plus le mot.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <Button
+            variant="ghost"
+            onClick={() => setPhase("front")}
+            className="h-14 flex-col gap-1 rounded-xl text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+          >
+            <RotateCcw className="size-4" />
+            Revoir 10 s
           </Button>
           <Button
             variant="ghost"
@@ -339,7 +429,53 @@ function Play() {
             Obtenir un mot
           </span>
         </motion.button>
+
+        <Button
+          variant="outline"
+          onClick={() => setManualOpen(true)}
+          className="h-12 rounded-2xl px-5 font-semibold"
+        >
+          <Keyboard className="mr-2 size-4" />
+          Écrire un mot à la main
+        </Button>
       </div>
+
+      <Dialog open={manualOpen} onOpenChange={setManualOpen}>
+        <DialogContent className="max-w-sm rounded-3xl">
+          <DialogHeader>
+            <DialogTitle>Écrire un mot</DialogTitle>
+            <DialogDescription>
+              Prends le téléphone du joueur, tape le mot, puis rends-lui l'appareil : le décompte de
+              5 s démarre.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void playManualWord();
+            }}
+            className="space-y-4"
+          >
+            <Input
+              autoFocus
+              maxLength={60}
+              value={manualWord}
+              onChange={(event) => setManualWord(event.target.value)}
+              placeholder="Ex. Raspoutine"
+              className="h-12 rounded-2xl text-base"
+            />
+            <DialogFooter>
+              <Button
+                type="submit"
+                disabled={!manualWord.trim()}
+                className="h-12 w-full rounded-2xl font-bold"
+              >
+                Lancer avec ce mot
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

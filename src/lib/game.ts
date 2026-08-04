@@ -142,6 +142,12 @@ export async function clearWord(playerId: string | null) {
   await supabase.from("players").update({ current_word: null }).eq("id", playerId);
 }
 
+/** Stores a word typed by hand on the player's phone. */
+export async function setPlayerWord(playerId: string | null, word: string) {
+  if (!playerId) return;
+  await supabase.from("players").update({ current_word: word }).eq("id", playerId);
+}
+
 export async function sendSuggestion(params: {
   roomId: string;
   targetPlayerId: string;
