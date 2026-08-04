@@ -4,6 +4,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
   Check,
+  EyeOff,
+  Keyboard,
   Loader2,
   MessageSquareQuote,
   RotateCcw,
@@ -16,6 +18,15 @@ import {
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { useWakeLock } from "@/hooks/use-wake-lock";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -57,7 +68,9 @@ export const Route = createFileRoute("/play/$code")({
   component: Play,
 });
 
-type Phase = "idle" | "countdown" | "front";
+type Phase = "idle" | "countdown" | "front" | "hidden";
+
+const FRONT_SECONDS = 10;
 
 function Play() {
   const { code } = Route.useParams();
@@ -67,9 +80,12 @@ function Play() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [word, setWord] = useState<string | null>(null);
   const [count, setCount] = useState(5);
+  const [frontLeft, setFrontLeft] = useState(FRONT_SECONDS);
   const [busy, setBusy] = useState(false);
   const [suggestion, setSuggestion] = useState<WordSuggestion | null>(null);
   const [sound, setSound] = useState(true);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualWord, setManualWord] = useState("");
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useWakeLock(phase !== "idle");
@@ -94,6 +110,7 @@ function Play() {
     stopTimer();
     void unlockAudio();
     setCount(5);
+    setFrontLeft(FRONT_SECONDS);
     setPhase("countdown");
     tickSound(5);
     timer.current = setInterval(() => {
@@ -111,6 +128,24 @@ function Play() {
   }, []);
 
   useEffect(() => stopTimer, []);
+
+  // While the word is on the forehead, count 10 s down, then hide it.
+  useEffect(() => {
+    if (phase !== "front") return;
+    setFrontLeft(FRONT_SECONDS);
+    const interval = setInterval(() => {
+      setFrontLeft((left) => {
+        if (left <= 1) {
+          clearInterval(interval);
+          endSound();
+          setPhase("hidden");
+          return 0;
+        }
+        return left - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [phase]);
 
   // Load and live-watch words whispered by other players.
   useEffect(() => {
@@ -157,6 +192,16 @@ function Play() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const playManualWord = async () => {
+    const text = manualWord.trim();
+    if (!text) return;
+    setManualOpen(false);
+    setManualWord("");
+    setWord(text);
+    startCountdown();
+    if (playerId) await setPlayerWord(playerId, text);
   };
 
   const playSuggestion = async () => {
