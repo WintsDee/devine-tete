@@ -2,12 +2,29 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
-import { ArrowLeft, Check, Copy, Loader2, Play, Users } from "lucide-react";
+import { ArrowLeft, Check, Copy, Loader2, MessageSquareQuote, Play, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { findRoom, joinRoom, listPlayers, savedName, savedPlayerId, type Player } from "@/lib/game";
+import {
+  findRoom,
+  joinRoom,
+  listPlayers,
+  savedName,
+  savedPlayerId,
+  sendSuggestion,
+  type Player,
+} from "@/lib/game";
+import { unlockAudio } from "@/lib/sfx";
 
 export const Route = createFileRoute("/room/$code")({
   head: () => ({
@@ -36,6 +53,9 @@ function Lobby() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [joinUrl, setJoinUrl] = useState("");
+  const [target, setTarget] = useState<Player | null>(null);
+  const [suggestionText, setSuggestionText] = useState("");
+  const [sending, setSending] = useState(false);
   const myId = savedPlayerId(roomCode);
 
   useEffect(() => {
@@ -96,6 +116,33 @@ function Lobby() {
     }
   };
 
+  const openWhisper = (player: Player) => {
+    void unlockAudio();
+    setSuggestionText("");
+    setTarget(player);
+  };
+
+  const submitWhisper = async () => {
+    if (!target || !roomId) return;
+    setSending(true);
+    try {
+      await sendSuggestion({
+        roomId,
+        targetPlayerId: target.id,
+        authorPlayerId: myId,
+        authorName: savedName() || "Un voisin",
+        text: suggestionText,
+      });
+      toast.success(`Mot envoyé à ${target.name}`);
+      setTarget(null);
+      setSuggestionText("");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Envoi impossible.");
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
     <main className="party-gradient flex min-h-[100dvh] flex-col px-5 pb-8 pt-6">
       <header className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
@@ -136,6 +183,9 @@ function Lobby() {
           <Users className="size-4" />
           Joueurs ({players.length})
         </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Touche un joueur pour lui souffler un mot de ton choix.
+        </p>
         <ul className="mt-3 space-y-2">
           {loading ? (
             <li className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -147,17 +197,29 @@ function Lobby() {
                 key={player.id}
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="flex items-center justify-between rounded-2xl border border-border bg-card/60 px-4 py-3"
+                className="rounded-2xl border border-border bg-card/60"
               >
-                <span className="truncate font-medium">
-                  {player.name}
-                  {player.id === myId ? " (toi)" : ""}
-                </span>
-                {player.current_word ? (
-                  <span className="shrink-0 text-xs font-semibold uppercase tracking-wide text-accent">
-                    en jeu
+                <button
+                  type="button"
+                  onClick={() => openWhisper(player)}
+                  disabled={player.id === myId}
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left disabled:opacity-100"
+                >
+                  <span className="truncate font-medium">
+                    {player.name}
+                    {player.id === myId ? " (toi)" : ""}
                   </span>
-                ) : null}
+                  <span className="flex shrink-0 items-center gap-2">
+                    {player.current_word ? (
+                      <span className="text-xs font-semibold uppercase tracking-wide text-accent">
+                        en jeu
+                      </span>
+                    ) : null}
+                    {player.id === myId ? null : (
+                      <MessageSquareQuote className="size-4 text-muted-foreground" />
+                    )}
+                  </span>
+                </button>
               </motion.li>
             ))
           )}
@@ -171,6 +233,36 @@ function Lobby() {
         <Play className="size-5" />
         Lancer mon tour
       </Button>
+
+      <Dialog open={Boolean(target)} onOpenChange={(open) => !open && setTarget(null)}>
+        <DialogContent className="rounded-3xl">
+          <DialogHeader>
+            <DialogTitle>Souffler un mot à {target?.name}</DialogTitle>
+            <DialogDescription>
+              Il apparaîtra directement sur son écran de jeu, sans qu'il puisse le lire.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            autoFocus
+            value={suggestionText}
+            maxLength={60}
+            placeholder="Ex : Le Radeau de la Méduse"
+            onChange={(event) => setSuggestionText(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") void submitWhisper();
+            }}
+            className="h-12 rounded-2xl"
+          />
+          <Button
+            onClick={() => void submitWhisper()}
+            disabled={sending || suggestionText.trim().length < 1}
+            className="h-12 w-full rounded-2xl font-bold"
+          >
+            {sending ? <Loader2 className="size-4 animate-spin" /> : null}
+            Envoyer le mot
+          </Button>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
