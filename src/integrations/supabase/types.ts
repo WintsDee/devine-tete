@@ -64,6 +64,64 @@ export type Database = {
         }
         Relationships: []
       }
+      word_suggestions: {
+        Row: {
+          author_name: string
+          author_player_id: string | null
+          created_at: string
+          id: string
+          room_id: string
+          status: string
+          target_player_id: string
+          text: string
+          updated_at: string
+        }
+        Insert: {
+          author_name: string
+          author_player_id?: string | null
+          created_at?: string
+          id?: string
+          room_id: string
+          status?: string
+          target_player_id: string
+          text: string
+          updated_at?: string
+        }
+        Update: {
+          author_name?: string
+          author_player_id?: string | null
+          created_at?: string
+          id?: string
+          room_id?: string
+          status?: string
+          target_player_id?: string
+          text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "word_suggestions_author_player_id_fkey"
+            columns: ["author_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "word_suggestions_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "word_suggestions_target_player_id_fkey"
+            columns: ["target_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       words: {
         Row: {
           category: string
