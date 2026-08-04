@@ -429,7 +429,53 @@ function Play() {
             Obtenir un mot
           </span>
         </motion.button>
+
+        <Button
+          variant="outline"
+          onClick={() => setManualOpen(true)}
+          className="h-12 rounded-2xl px-5 font-semibold"
+        >
+          <Keyboard className="mr-2 size-4" />
+          Écrire un mot à la main
+        </Button>
       </div>
+
+      <Dialog open={manualOpen} onOpenChange={setManualOpen}>
+        <DialogContent className="max-w-sm rounded-3xl">
+          <DialogHeader>
+            <DialogTitle>Écrire un mot</DialogTitle>
+            <DialogDescription>
+              Prends le téléphone du joueur, tape le mot, puis rends-lui l'appareil : le décompte de
+              5 s démarre.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void playManualWord();
+            }}
+            className="space-y-4"
+          >
+            <Input
+              autoFocus
+              maxLength={60}
+              value={manualWord}
+              onChange={(event) => setManualWord(event.target.value)}
+              placeholder="Ex. Raspoutine"
+              className="h-12 rounded-2xl text-base"
+            />
+            <DialogFooter>
+              <Button
+                type="submit"
+                disabled={!manualWord.trim()}
+                className="h-12 w-full rounded-2xl font-bold"
+              >
+                Lancer avec ce mot
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
