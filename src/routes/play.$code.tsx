@@ -237,6 +237,9 @@ function Play() {
   if (phase === "front" && word) {
     return (
       <main className="flex min-h-[100dvh] flex-col bg-black">
+        <p className="pt-[max(0.75rem,env(safe-area-inset-top))] text-center text-sm font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+          Caché dans {frontLeft} s
+        </p>
         <div className="flex flex-1 items-center justify-center px-6 py-10">
           <motion.p
             key={word}
@@ -256,6 +259,47 @@ function Play() {
           >
             <RotateCcw className="size-4" />
             Relancer
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={newWord}
+            disabled={busy}
+            className="h-14 flex-col gap-1 rounded-xl text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+          >
+            {busy ? <Loader2 className="size-4 animate-spin" /> : <Shuffle className="size-4" />}
+            Nouveau mot
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => void endTurn()}
+            className="h-14 flex-col gap-1 rounded-xl text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+          >
+            <Check className="size-4" />
+            Fin du tour
+          </Button>
+        </div>
+      </main>
+    );
+  }
+
+  if (phase === "hidden") {
+    return (
+      <main className="flex min-h-[100dvh] flex-col bg-black">
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
+          <EyeOff className="size-10 text-muted-foreground" />
+          <p className="font-display text-3xl font-bold">Mot caché</p>
+          <p className="max-w-xs text-sm text-muted-foreground">
+            Tu peux reprendre ton téléphone : personne ne voit plus le mot.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <Button
+            variant="ghost"
+            onClick={() => setPhase("front")}
+            className="h-14 flex-col gap-1 rounded-xl text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+          >
+            <RotateCcw className="size-4" />
+            Revoir 10 s
           </Button>
           <Button
             variant="ghost"
