@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { WORD_BANK } from "@/lib/words";
+import type { BankWord } from "@/lib/words-types";
 
 export type Player = {
   id: string;
@@ -42,8 +43,8 @@ function markSeen(word: string, seen: string[]) {
   window.localStorage.setItem(SEEN_KEY, JSON.stringify(next));
 }
 
-/** Picks a word never drawn before on this device; resets only once the whole bank is used. */
-export function pickWord(): string {
+/** Picks an entry never drawn before on this device; resets only once the whole bank is used. */
+export function pickWord(): BankWord {
   let seen = seenWords();
   let pool = WORD_BANK.filter((entry) => !seen.includes(entry.text));
   if (pool.length === 0) {
@@ -51,9 +52,9 @@ export function pickWord(): string {
     if (typeof window !== "undefined") window.localStorage.removeItem(SEEN_KEY);
     pool = [...WORD_BANK];
   }
-  const word = pool[Math.floor(Math.random() * pool.length)]!.text;
-  markSeen(word, seen);
-  return word;
+  const entry = pool[Math.floor(Math.random() * pool.length)]!;
+  markSeen(entry.text, seen);
+  return entry;
 }
 
 function randomCode() {
@@ -152,12 +153,12 @@ export async function listPlayers(roomId: string): Promise<Player[]> {
   return (data ?? []) as Player[];
 }
 
-export async function drawWord(playerId: string | null): Promise<string> {
-  const word = pickWord();
+export async function drawWord(playerId: string | null): Promise<BankWord> {
+  const entry = pickWord();
   if (playerId) {
-    await supabase.from("players").update({ current_word: word }).eq("id", playerId);
+    await supabase.from("players").update({ current_word: entry.text }).eq("id", playerId);
   }
-  return word;
+  return entry;
 }
 
 export async function clearWord(playerId: string | null) {

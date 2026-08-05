@@ -14,6 +14,111 @@ export type Database = {
   }
   public: {
     Tables: {
+      chrono_games: {
+        Row: {
+          created_at: string
+          current_round: number
+          current_team_id: string | null
+          duration_seconds: number
+          id: string
+          room_id: string
+          rounds: number
+          status: string
+          turn_ends_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_round?: number
+          current_team_id?: string | null
+          duration_seconds?: number
+          id?: string
+          room_id: string
+          rounds?: number
+          status?: string
+          turn_ends_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_round?: number
+          current_team_id?: string | null
+          duration_seconds?: number
+          id?: string
+          room_id?: string
+          rounds?: number
+          status?: string
+          turn_ends_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chrono_games_current_team_id_fkey"
+            columns: ["current_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chrono_games_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chrono_scores: {
+        Row: {
+          created_at: string
+          found_words: Json
+          game_id: string
+          id: string
+          points: number
+          round: number
+          skipped_words: Json
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          found_words?: Json
+          game_id: string
+          id?: string
+          points?: number
+          round?: number
+          skipped_words?: Json
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          found_words?: Json
+          game_id?: string
+          id?: string
+          points?: number
+          round?: number
+          skipped_words?: Json
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chrono_scores_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "chrono_games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chrono_scores_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           created_at: string
@@ -63,6 +168,74 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      team_members: {
+        Row: {
+          created_at: string
+          id: string
+          player_id: string
+          team_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          player_id: string
+          team_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          player_id?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          room_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          room_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          room_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       word_suggestions: {
         Row: {

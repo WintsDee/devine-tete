@@ -2,7 +2,18 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
-import { ArrowLeft, Check, Copy, Loader2, MessageSquareQuote, Play, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  Copy,
+  Loader2,
+  MessageSquareQuote,
+  Play,
+  Plus,
+  Timer,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -25,6 +36,17 @@ import {
   type Player,
 } from "@/lib/game";
 import { unlockAudio } from "@/lib/sfx";
+import {
+  activeGame,
+  createGame,
+  createTeam,
+  deleteTeam,
+  joinTeam,
+  listTeamMembers,
+  listTeams,
+  type Team,
+  type TeamMember,
+} from "@/lib/chrono";
 
 export const Route = createFileRoute("/room/$code")({
   head: () => ({
@@ -56,6 +78,10 @@ function Lobby() {
   const [target, setTarget] = useState<Player | null>(null);
   const [suggestionText, setSuggestionText] = useState("");
   const [sending, setSending] = useState(false);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [rounds, setRounds] = useState(1);
+  const [launching, setLaunching] = useState(false);
   const myId = savedPlayerId(roomCode);
 
   useEffect(() => {
@@ -78,6 +104,14 @@ function Lobby() {
         if (cancelled) return;
         setRoomId(room.id);
         setPlayers(await listPlayers(room.id));
+        const nextTeams = await listTeams(room.id);
+        setTeams(nextTeams);
+        setMembers(await listTeamMembers(nextTeams.map((team) => team.id)));
+        const running = await activeGame(room.id);
+        if (running && running.status !== "finished") {
+          await navigate({ to: "/room/$code_/chrono", params: { code: roomCode } });
+          return;
+        }
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Erreur de chargement.");
       } finally {
@@ -100,11 +134,72 @@ function Lobby() {
           void listPlayers(roomId).then(setPlayers);
         },
       )
+      .on("postgres_changes", { event: "*", schema: "public", table: "teams" }, () => {
+        void listTeams(roomId).then(async (nextTeams) => {
+          setTeams(nextTeams);
+          setMembers(await listTeamMembers(nextTeams.map((team) => team.id)));
+        });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "team_members" }, () => {
+        void listTeams(roomId).then(async (nextTeams) => {
+          setMembers(await listTeamMembers(nextTeams.map((team) => team.id)));
+        });
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chrono_games" }, () => {
+        void navigate({ to: "/room/$code_/chrono", params: { code: roomCode } });
+      })
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [roomId]);
+  }, [roomId, navigate, roomCode]);
+
+  const myTeamId = members.find((member) => member.player_id === myId)?.team_id ?? null;
+
+  const teamPlayers = (teamId: string) =>
+    members
+      .filter((member) => member.team_id === teamId)
+      .map((member) => players.find((player) => player.id === member.player_id)?.name)
+      .filter(Boolean) as string[];
+
+  const addTeam = async () => {
+    if (!roomId) return;
+    try {
+      await createTeam(roomId, `Équipe ${teams.length + 1}`, teams.length);
+    } catch {
+      toast.error("Impossible de créer l'équipe.");
+    }
+  };
+
+  const pickTeam = async (teamId: string) => {
+    if (!myId) {
+      toast.error("Rejoins d'abord la partie avec ton pseudo.");
+      return;
+    }
+    try {
+      await joinTeam(teamId, myId, teams.map((team) => team.id));
+    } catch {
+      toast.error("Impossible de rejoindre cette équipe.");
+    }
+  };
+
+  const launchChrono = async () => {
+    if (!roomId) return;
+    const ready = teams.filter((team) => teamPlayers(team.id).length > 0);
+    if (ready.length < 2) {
+      toast.error("Il faut au moins deux équipes avec des joueurs.");
+      return;
+    }
+    setLaunching(true);
+    try {
+      await createGame(roomId, rounds, ready[0]!.id);
+      await navigate({ to: "/room/$code_/chrono", params: { code: roomCode } });
+    } catch {
+      toast.error("Impossible de lancer le Chrono.");
+    } finally {
+      setLaunching(false);
+    }
+  };
 
   const copyCode = async () => {
     try {
@@ -233,6 +328,86 @@ function Lobby() {
         <Play className="size-5" />
         Lancer mon tour
       </Button>
+
+      <section className="mt-8 rounded-3xl border border-border bg-card/70 p-5 backdrop-blur">
+        <div className="flex items-center justify-between gap-3">
+          <p className="flex items-center gap-2 text-sm font-bold">
+            <Timer className="size-4 text-primary" />
+            Chrono 3 min en équipes
+          </p>
+          <Button
+            variant="ghost"
+            onClick={() => void addTeam()}
+            className="h-9 rounded-xl px-3 text-xs font-semibold"
+          >
+            <Plus className="size-4" />
+            Équipe
+          </Button>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Crée des équipes de 2 joueurs ou plus, choisis ton équipe, puis lancez les manches.
+        </p>
+
+        <ul className="mt-4 space-y-2">
+          {teams.map((team) => (
+            <li
+              key={team.id}
+              className={`flex items-center gap-2 rounded-2xl border px-3 py-2 ${
+                team.id === myTeamId ? "border-primary bg-card/90" : "border-border bg-card/50"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => void pickTeam(team.id)}
+                className="min-w-0 flex-1 text-left"
+              >
+                <span className="block truncate text-sm font-semibold">
+                  {team.name}
+                  {team.id === myTeamId ? " (mon équipe)" : ""}
+                </span>
+                <span className="block truncate text-xs text-muted-foreground">
+                  {teamPlayers(team.id).join(", ") || "Touche pour rejoindre"}
+                </span>
+              </button>
+              <Button
+                variant="ghost"
+                onClick={() => void deleteTeam(team.id)}
+                className="size-9 shrink-0 rounded-xl p-0 text-muted-foreground"
+                aria-label={`Supprimer ${team.name}`}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Manches
+          </span>
+          <div className="flex gap-2">
+            {[1, 2, 3].map((value) => (
+              <Button
+                key={value}
+                variant={rounds === value ? "default" : "outline"}
+                onClick={() => setRounds(value)}
+                className="size-10 rounded-xl p-0 font-bold"
+              >
+                {value}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <Button
+          onClick={() => void launchChrono()}
+          disabled={launching}
+          className="mt-4 h-14 w-full rounded-2xl text-base font-bold"
+        >
+          {launching ? <Loader2 className="size-5 animate-spin" /> : <Timer className="size-5" />}
+          Lancer le Chrono
+        </Button>
+      </section>
 
       <Dialog open={Boolean(target)} onOpenChange={(open) => !open && setTarget(null)}>
         <DialogContent className="rounded-3xl">

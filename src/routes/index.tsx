@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Martini, PartyPopper, Users, Zap } from "lucide-react";
+import { Loader2, Martini, PartyPopper, Timer, Users, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -117,6 +117,18 @@ function Home() {
         </Button>
         <p className="text-center text-xs text-muted-foreground">
           Tirage immédiat, aucun code ni inscription.
+        </p>
+
+        <Button
+          variant="secondary"
+          onClick={() => void navigate({ to: "/chrono" })}
+          className="h-14 w-full rounded-2xl text-base font-bold"
+        >
+          <Timer className="size-5" />
+          Chrono 3 min (à deux)
+        </Button>
+        <p className="text-center text-xs text-muted-foreground">
+          Sans décompte : un joueur fait deviner, l'autre trouve un max de mots en 3 minutes.
         </p>
 
         <div className="space-y-4 border-t border-border pt-4">
