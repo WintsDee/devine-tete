@@ -83,97 +83,63 @@ function Home() {
   };
 
   return (
-    <main className="party-gradient relative flex min-h-[100dvh] flex-col items-center justify-center gap-8 px-5 py-10">
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
+    <main className="party-gradient relative flex min-h-[100dvh] flex-col justify-center gap-10 px-6 py-12">
+      <motion.header
+        initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-sm text-center"
+        className="mx-auto w-full max-w-sm"
       >
-        <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3 py-1 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+        <span className="inline-flex items-center gap-2 text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
           <Martini className="size-3.5 text-primary" /> Party game
         </span>
-        <h1 className="mt-5 text-5xl font-bold leading-[0.95] text-foreground">
+        <h1 className="mt-4 text-6xl font-bold leading-[0.9] tracking-tight text-foreground">
           Devine
           <span className="block text-word text-glow">Tête</span>
         </h1>
-        <p className="mt-3 text-sm text-muted-foreground">
-          Le mot s'affiche en grand sur ton front. À toi de le deviner… sans le voir.
-        </p>
-      </motion.div>
+      </motion.header>
 
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="w-full max-w-sm space-y-4 rounded-3xl border border-border bg-card/80 p-5 backdrop-blur"
+        className="mx-auto w-full max-w-sm space-y-3"
       >
         <Button
           onClick={() => void navigate({ to: "/solo" })}
-          className="h-16 w-full rounded-2xl text-lg font-bold"
+          className="h-16 w-full justify-between rounded-2xl px-5 text-lg font-bold"
         >
-          <Zap className="size-5" />
           Jouer (sans lobby)
+          <Zap className="size-5" />
         </Button>
-        <p className="text-center text-xs text-muted-foreground">
-          Tirage immédiat, aucun code ni inscription.
-        </p>
 
         <Button
           variant="secondary"
           onClick={() => void navigate({ to: "/chrono" })}
-          className="h-14 w-full rounded-2xl text-base font-bold"
+          className="h-16 w-full justify-between rounded-2xl px-5 text-lg font-bold"
         >
+          Chrono 3 min
           <Timer className="size-5" />
-          Chrono 3 min (à deux)
-        </Button>
-        <p className="text-center text-xs text-muted-foreground">
-          Sans décompte : un joueur fait deviner, l'autre trouve un max de mots en 3 minutes.
-        </p>
-
-        <div className="space-y-4 border-t border-border pt-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Ou jouer à plusieurs avec un lobby
-          </p>
-        <div className="space-y-2 text-left">
-          <label htmlFor="pseudo" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Ton pseudo
-          </label>
-          <Input
-            id="pseudo"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Ex. Léa"
-            maxLength={18}
-            className="h-11 rounded-2xl text-base"
-          />
-        </div>
-
-        <Button
-          variant="secondary"
-          onClick={onCreate}
-          disabled={busy !== null}
-          className="h-12 w-full rounded-2xl text-sm font-bold"
-        >
-          {busy === "create" ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <PartyPopper className="size-4" />
-          )}
-          Créer une partie
         </Button>
 
         {mode === "idle" ? (
-          <Button
-            variant="outline"
+          <button
+            type="button"
             onClick={() => setMode("join")}
-            className="h-12 w-full rounded-2xl text-sm font-bold"
+            className="w-full pt-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground"
           >
-            <Users className="size-4" />
-            Rejoindre une partie
-          </Button>
+            Jouer à plusieurs (lobby)
+          </button>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 border-t border-border pt-5">
+            <Input
+              id="pseudo"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Ton pseudo"
+              maxLength={18}
+              className="h-12 rounded-2xl text-base"
+            />
             <Input
               value={code}
               onChange={(event) => setCode(event.target.value.toUpperCase().slice(0, 4))}
@@ -182,22 +148,32 @@ function Home() {
               autoCapitalize="characters"
               className="h-14 rounded-2xl text-center text-2xl font-bold tracking-[0.4em]"
             />
-            <Button
-              variant="outline"
-              onClick={onJoin}
-              disabled={busy !== null}
-              className="h-12 w-full rounded-2xl text-sm font-bold"
-            >
-              {busy === "join" ? <Loader2 className="size-4 animate-spin" /> : <Users className="size-4" />}
-              Rejoindre
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={onJoin}
+                disabled={busy !== null}
+                className="h-12 flex-1 rounded-2xl text-sm font-bold"
+              >
+                {busy === "join" ? <Loader2 className="size-4 animate-spin" /> : <Users className="size-4" />}
+                Rejoindre
+              </Button>
+              <Button
+                variant="outline"
+                onClick={onCreate}
+                disabled={busy !== null}
+                className="h-12 flex-1 rounded-2xl text-sm font-bold"
+              >
+                {busy === "create" ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <PartyPopper className="size-4" />
+                )}
+                Créer
+              </Button>
+            </div>
           </div>
         )}
-
-          <p className="text-center text-xs text-muted-foreground">
-            Astuce : scanne le QR code d'un ami pour entrer directement dans sa partie.
-          </p>
-        </div>
       </motion.div>
     </main>
   );
