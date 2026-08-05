@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, PartyPopper, Sparkles, Users, Zap } from "lucide-react";
+import { Loader2, Martini, PartyPopper, Users, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -91,14 +91,14 @@ function Home() {
         className="w-full max-w-sm text-center"
       >
         <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3 py-1 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-          <Sparkles className="size-3.5 text-primary" /> Jeu de soirée
+          <Martini className="size-3.5 text-primary" /> Party game
         </span>
         <h1 className="mt-5 text-5xl font-bold leading-[0.95] text-foreground">
           Devine
           <span className="block text-word text-glow">Tête</span>
         </h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          Le mot s'affiche en grand sur ton front. À toi de le faire deviner… sans le voir.
+          Le mot s'affiche en grand sur ton front. À toi de le deviner… sans le voir.
         </p>
       </motion.div>
 
@@ -108,6 +108,21 @@ function Home() {
         transition={{ duration: 0.5, delay: 0.1 }}
         className="w-full max-w-sm space-y-4 rounded-3xl border border-border bg-card/80 p-5 backdrop-blur"
       >
+        <Button
+          onClick={() => void navigate({ to: "/solo" })}
+          className="h-16 w-full rounded-2xl text-lg font-bold"
+        >
+          <Zap className="size-5" />
+          Jouer (sans lobby)
+        </Button>
+        <p className="text-center text-xs text-muted-foreground">
+          Tirage immédiat, aucun code ni inscription.
+        </p>
+
+        <div className="space-y-4 border-t border-border pt-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Ou jouer à plusieurs avec un lobby
+          </p>
         <div className="space-y-2 text-left">
           <label htmlFor="pseudo" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Ton pseudo
@@ -118,30 +133,31 @@ function Home() {
             onChange={(event) => setName(event.target.value)}
             placeholder="Ex. Léa"
             maxLength={18}
-            className="h-12 rounded-2xl text-base"
+            className="h-11 rounded-2xl text-base"
           />
         </div>
 
         <Button
+          variant="secondary"
           onClick={onCreate}
           disabled={busy !== null}
-          className="h-14 w-full rounded-2xl text-base font-bold"
+          className="h-12 w-full rounded-2xl text-sm font-bold"
         >
           {busy === "create" ? (
-            <Loader2 className="size-5 animate-spin" />
+            <Loader2 className="size-4 animate-spin" />
           ) : (
-            <PartyPopper className="size-5" />
+            <PartyPopper className="size-4" />
           )}
           Créer une partie
         </Button>
 
         {mode === "idle" ? (
           <Button
-            variant="secondary"
+            variant="outline"
             onClick={() => setMode("join")}
-            className="h-14 w-full rounded-2xl text-base font-bold"
+            className="h-12 w-full rounded-2xl text-sm font-bold"
           >
-            <Users className="size-5" />
+            <Users className="size-4" />
             Rejoindre une partie
           </Button>
         ) : (
@@ -152,33 +168,23 @@ function Home() {
               placeholder="CODE"
               inputMode="text"
               autoCapitalize="characters"
-              className="h-16 rounded-2xl text-center text-3xl font-bold tracking-[0.4em]"
+              className="h-14 rounded-2xl text-center text-2xl font-bold tracking-[0.4em]"
             />
             <Button
-              variant="secondary"
+              variant="outline"
               onClick={onJoin}
               disabled={busy !== null}
-              className="h-14 w-full rounded-2xl text-base font-bold"
+              className="h-12 w-full rounded-2xl text-sm font-bold"
             >
-              {busy === "join" ? <Loader2 className="size-5 animate-spin" /> : <Users className="size-5" />}
+              {busy === "join" ? <Loader2 className="size-4 animate-spin" /> : <Users className="size-4" />}
               Rejoindre
             </Button>
           </div>
         )}
 
-        <p className="text-center text-xs text-muted-foreground">
-          Astuce : scanne le QR code d'un ami pour entrer directement dans sa partie.
-        </p>
-
-        <div className="border-t border-border pt-4">
-          <Button
-            variant="outline"
-            onClick={() => void navigate({ to: "/solo" })}
-            className="h-12 w-full rounded-2xl text-sm font-bold"
-          >
-            <Zap className="size-4" />
-            Jouer tout de suite (sans lobby)
-          </Button>
+          <p className="text-center text-xs text-muted-foreground">
+            Astuce : scanne le QR code d'un ami pour entrer directement dans sa partie.
+          </p>
         </div>
       </motion.div>
     </main>
