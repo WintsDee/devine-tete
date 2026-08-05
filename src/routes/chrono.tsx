@@ -86,8 +86,8 @@ function Chrono() {
       <div className="flex flex-1 flex-col items-center justify-center gap-8 text-center">
         <p className="max-w-xs text-sm text-muted-foreground">
           Un joueur tient le téléphone et fait deviner le mot affiché (une petite description
-          l'aide), l'autre devine. « Trouvé » marque un point, « Passer » enchaîne. Trois minutes,
-          un maximum de mots.
+          l'aide), l'autre devine. « Trouvé » marque 1, 2 ou 3 points selon la difficulté du mot,
+          « Passer » enchaîne. Trois minutes, un maximum de points.
         </p>
         <motion.button
           type="button"
