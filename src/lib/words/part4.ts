@@ -313,7 +313,7 @@ export const PART_4: BankWord[] = [
   { text: "PPDA", category: "Personnalités", hint: "Journaliste français né en 1947, vivant, longtemps présentateur du JT de 20h" },
   { text: "Anne-Sophie Lapix", category: "Personnalités", hint: "Journaliste française née en 1972, vivante, présentatrice du JT" },
   { text: "Gilbert Montagné", category: "Personnalités", hint: "Chanteur français né en 1951, vivant, succès des années 80" },
-  { text: "Nokia 6110", category: "Objets", hint: "Téléphone portable emblématique de la fin des années 90" }
+  { text: "Nokia 6110", category: "Objets", hint: "Téléphone portable emblématique de la fin des années 90" },
   { text: "Fabrice Luchini", category: "Personnalités", hint: "Acteur français né en 1951, vivant, connu pour son phrasé unique" },
   { text: "Isabelle Adjani", category: "Personnalités", hint: "Actrice française née en 1955, vivante, plusieurs César obtenus" },
   { text: "Alain Delon", category: "Personnalités", hint: "Acteur français né en 1935, mort en 2024, icône du cinéma français" },
