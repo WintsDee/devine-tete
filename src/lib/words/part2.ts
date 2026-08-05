@@ -1,5 +1,5 @@
 import type { BankWord } from "@/lib/words-types";
-export const PART_2: BankWord[
+export const PART_2: BankWord[] = [
   { text: "Jack Sparrow", category: "Cinéma", hint: "Capitaine pirate excentrique joué par Johnny Depp, fictif, saga Disney" },
   { text: "Mario", category: "Jeux vidéo", hint: "Plombier moustachu en rouge, mascotte Nintendo, fictif" },
   { text: "Leonardo DiCaprio", category: "Cinéma", hint: "Né en 1974, vivant, acteur américain oscarisé pour The Revenant" },
