@@ -224,7 +224,7 @@ function Play() {
     if (!suggestion) return;
     const id = suggestion.id;
     setSuggestion(null);
-    await resolveSuggestion(id, "skipped");
+    await resolveSuggestion(id, playerId, "skipped");
   };
 
   const endTurn = async () => {

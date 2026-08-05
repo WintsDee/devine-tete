@@ -180,7 +180,7 @@ async function writeWord(playerId: string | null, word: string | null) {
   const { error } = await supabase.rpc("set_player_word", {
     p_player_id: playerId,
     p_token: token,
-    p_word: word,
+    p_word: word ?? "",
   });
   if (error) throw error;
 }
