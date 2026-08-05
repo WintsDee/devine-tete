@@ -1,4 +1,17 @@
-import { supabase } from "@/integrations/supabase/client";
+import {
+  activeGameFn,
+  archiveGameFn,
+  createGameFn,
+  createTeamFn,
+  deleteTeamFn,
+  joinTeamFn,
+  listScoresFn,
+  listTeamMembersFn,
+  listTeamsFn,
+  startTurnFn,
+  submitTurnFn,
+} from "@/lib/api.functions";
+import { authForRoom, type Auth } from "@/lib/game";
 
 export type Team = {
   id: string;
@@ -43,150 +56,81 @@ export const TEAM_COLORS = ["yellow", "pink", "cyan", "lime", "orange", "violet"
 
 export const CHRONO_SECONDS = 180;
 
+function auth(roomId: string): Auth {
+  const found = authForRoom(roomId);
+  if (!found) throw new Error("Rejoins la partie avec ton pseudo.");
+  return found;
+}
+
 export async function listTeams(roomId: string): Promise<Team[]> {
-  const { data, error } = await supabase
-    .from("teams")
-    .select("*")
-    .eq("room_id", roomId)
-    .order("created_at", { ascending: true });
-  if (error) throw error;
+  const data = await listTeamsFn({ data: { ...auth(roomId), roomId } });
   return (data ?? []) as Team[];
 }
 
-export async function listTeamMembers(teamIds: string[]): Promise<TeamMember[]> {
-  if (teamIds.length === 0) return [];
-  const { data, error } = await supabase
-    .from("team_members")
-    .select("id, team_id, player_id")
-    .in("team_id", teamIds);
-  if (error) throw error;
+export async function listTeamMembers(roomId: string): Promise<TeamMember[]> {
+  const data = await listTeamMembersFn({ data: { ...auth(roomId), roomId } });
   return (data ?? []) as TeamMember[];
 }
 
 export async function createTeam(roomId: string, name: string, index: number) {
   const color = TEAM_COLORS[index % TEAM_COLORS.length]!;
-  const { data, error } = await supabase
-    .from("teams")
-    .insert({ room_id: roomId, name: name.trim(), color })
-    .select("*")
-    .single();
-  if (error) throw error;
+  const data = await createTeamFn({
+    data: { ...auth(roomId), roomId, name: name.trim(), color },
+  });
   return data as Team;
 }
 
-export async function deleteTeam(teamId: string) {
-  const { error } = await supabase.from("teams").delete().eq("id", teamId);
-  if (error) throw error;
+export async function deleteTeam(roomId: string, teamId: string) {
+  await deleteTeamFn({ data: { ...auth(roomId), teamId } });
 }
 
-/** Moves a player into a team, leaving any other team of the same room first. */
-export async function joinTeam(teamId: string, playerId: string, roomTeamIds: string[]) {
-  if (roomTeamIds.length > 0) {
-    await supabase
-      .from("team_members")
-      .delete()
-      .eq("player_id", playerId)
-      .in("team_id", roomTeamIds);
-  }
-  const { error } = await supabase
-    .from("team_members")
-    .insert({ team_id: teamId, player_id: playerId });
-  if (error) throw error;
+/** Moves the current player into a team of its own room. */
+export async function joinTeam(roomId: string, teamId: string) {
+  await joinTeamFn({ data: { ...auth(roomId), teamId } });
 }
 
 export async function activeGame(roomId: string): Promise<ChronoGame | null> {
-  const { data, error } = await supabase
-    .from("chrono_games")
-    .select("*")
-    .eq("room_id", roomId)
-    .neq("status", "archived")
-    .order("created_at", { ascending: false })
-    .limit(1);
-  if (error) throw error;
-  return (data?.[0] as ChronoGame | undefined) ?? null;
+  const data = await activeGameFn({ data: { ...auth(roomId), roomId } });
+  return (data as ChronoGame | null) ?? null;
 }
 
 export async function createGame(roomId: string, rounds: number, firstTeamId: string) {
-  await supabase.from("chrono_games").update({ status: "archived" }).eq("room_id", roomId);
-  const { data, error } = await supabase
-    .from("chrono_games")
-    .insert({
-      room_id: roomId,
+  const data = await createGameFn({
+    data: {
+      ...auth(roomId),
+      roomId,
       rounds,
-      current_round: 1,
-      current_team_id: firstTeamId,
-      status: "waiting",
-      duration_seconds: CHRONO_SECONDS,
-    })
-    .select("*")
-    .single();
-  if (error) throw error;
+      firstTeamId,
+      durationSeconds: CHRONO_SECONDS,
+    },
+  });
   return data as ChronoGame;
 }
 
-export async function archiveGame(gameId: string) {
-  await supabase.from("chrono_games").update({ status: "archived" }).eq("id", gameId);
+export async function archiveGame(roomId: string, gameId: string) {
+  await archiveGameFn({ data: { ...auth(roomId), gameId } });
 }
 
 export async function startTurn(game: ChronoGame) {
-  const endsAt = new Date(Date.now() + game.duration_seconds * 1000).toISOString();
-  const { error } = await supabase
-    .from("chrono_games")
-    .update({ status: "playing", turn_ends_at: endsAt })
-    .eq("id", game.id);
-  if (error) throw error;
+  await startTurnFn({ data: { ...auth(game.room_id), gameId: game.id } });
 }
 
-export async function listScores(gameId: string): Promise<ChronoScore[]> {
-  const { data, error } = await supabase
-    .from("chrono_scores")
-    .select("*")
-    .eq("game_id", gameId)
-    .order("round", { ascending: true });
-  if (error) throw error;
+export async function listScores(roomId: string, gameId: string): Promise<ChronoScore[]> {
+  const data = await listScoresFn({ data: { ...auth(roomId), gameId } });
   return (data ?? []) as ChronoScore[];
 }
 
-/** Saves the finished turn and hands over to the next team, round or the final screen. */
-export async function submitTurn(game: ChronoGame, teams: Team[], result: RoundResult) {
-  if (game.current_team_id) {
-    await supabase.from("chrono_scores").upsert(
-      {
-        game_id: game.id,
-        team_id: game.current_team_id,
-        round: game.current_round,
-        points: result.points,
-        found_words: result.found,
-        skipped_words: result.skipped,
-      },
-      { onConflict: "game_id,team_id,round" },
-    );
-  }
-  const index = teams.findIndex((team) => team.id === game.current_team_id);
-  const next = teams[index + 1];
-  if (next) {
-    await supabase
-      .from("chrono_games")
-      .update({ current_team_id: next.id, status: "waiting", turn_ends_at: null })
-      .eq("id", game.id);
-    return;
-  }
-  if (game.current_round < game.rounds && teams[0]) {
-    await supabase
-      .from("chrono_games")
-      .update({
-        current_round: game.current_round + 1,
-        current_team_id: teams[0].id,
-        status: "waiting",
-        turn_ends_at: null,
-      })
-      .eq("id", game.id);
-    return;
-  }
-  await supabase
-    .from("chrono_games")
-    .update({ status: "finished", turn_ends_at: null })
-    .eq("id", game.id);
+/** Saves the finished turn; the server hands over to the next team, round or final screen. */
+export async function submitTurn(game: ChronoGame, result: RoundResult) {
+  await submitTurnFn({
+    data: {
+      ...auth(game.room_id),
+      gameId: game.id,
+      points: result.points,
+      found: result.found,
+      skipped: result.skipped,
+    },
+  });
 }
 
 export function totalsByTeam(scores: ChronoScore[]): Record<string, number> {

@@ -25,7 +25,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
 import {
   findRoom,
   joinRoom,
@@ -104,9 +103,8 @@ function Lobby() {
         if (cancelled) return;
         setRoomId(room.id);
         setPlayers(await listPlayers(room.id));
-        const nextTeams = await listTeams(room.id);
-        setTeams(nextTeams);
-        setMembers(await listTeamMembers(nextTeams.map((team) => team.id)));
+        setTeams(await listTeams(room.id));
+        setMembers(await listTeamMembers(room.id));
         const running = await activeGame(room.id);
         if (running && running.status !== "finished") {
           await navigate({ to: "/room/$code/chrono", params: { code: roomCode } });
@@ -123,34 +121,34 @@ function Lobby() {
     };
   }, [roomCode, navigate]);
 
+  // Game data is server-guarded, so the lobby polls its own room instead of
+  // subscribing to raw table changes.
   useEffect(() => {
     if (!roomId) return;
-    const channel = supabase
-      .channel(`room-${roomId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "players", filter: `room_id=eq.${roomId}` },
-        () => {
-          void listPlayers(roomId).then(setPlayers);
-        },
-      )
-      .on("postgres_changes", { event: "*", schema: "public", table: "teams" }, () => {
-        void listTeams(roomId).then(async (nextTeams) => {
-          setTeams(nextTeams);
-          setMembers(await listTeamMembers(nextTeams.map((team) => team.id)));
-        });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "team_members" }, () => {
-        void listTeams(roomId).then(async (nextTeams) => {
-          setMembers(await listTeamMembers(nextTeams.map((team) => team.id)));
-        });
-      })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chrono_games" }, () => {
-        void navigate({ to: "/room/$code/chrono", params: { code: roomCode } });
-      })
-      .subscribe();
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const [nextPlayers, nextTeams, nextMembers, running] = await Promise.all([
+          listPlayers(roomId),
+          listTeams(roomId),
+          listTeamMembers(roomId),
+          activeGame(roomId),
+        ]);
+        if (cancelled) return;
+        setPlayers(nextPlayers);
+        setTeams(nextTeams);
+        setMembers(nextMembers);
+        if (running && running.status !== "finished") {
+          await navigate({ to: "/room/$code/chrono", params: { code: roomCode } });
+        }
+      } catch {
+        // Transient network hiccups keep the last known state.
+      }
+    };
+    const interval = setInterval(() => void poll(), 2500);
     return () => {
-      void supabase.removeChannel(channel);
+      cancelled = true;
+      clearInterval(interval);
     };
   }, [roomId, navigate, roomCode]);
 
@@ -159,7 +157,7 @@ function Lobby() {
   const refreshTeams = async (id: string) => {
     const nextTeams = await listTeams(id);
     setTeams(nextTeams);
-    setMembers(await listTeamMembers(nextTeams.map((team) => team.id)));
+    setMembers(await listTeamMembers(id));
     return nextTeams;
   };
 
@@ -186,7 +184,7 @@ function Lobby() {
       return;
     }
     try {
-      await joinTeam(teamId, myId, teams.map((team) => team.id));
+      await joinTeam(roomId ?? "", teamId);
       if (roomId) await refreshTeams(roomId);
     } catch {
       toast.error("Impossible de rejoindre cette équipe.");
@@ -382,7 +380,7 @@ function Lobby() {
               <Button
                 variant="ghost"
                 onClick={async () => {
-                  await deleteTeam(team.id);
+                  await deleteTeam(roomId ?? "", team.id);
                   if (roomId) await refreshTeams(roomId);
                 }}
                 className="size-9 shrink-0 rounded-xl p-0 text-muted-foreground"

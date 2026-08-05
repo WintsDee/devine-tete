@@ -28,7 +28,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useWakeLock } from "@/hooks/use-wake-lock";
-import { supabase } from "@/integrations/supabase/client";
 import {
   clearWord,
   drawWord,
@@ -149,38 +148,32 @@ function Play() {
     return () => clearInterval(interval);
   }, [phase]);
 
-  // Load and live-watch words whispered by other players.
+  // Words whispered by other players are fetched through the guarded server
+  // layer, so we poll for the latest pending suggestion.
   useEffect(() => {
     if (!playerId) return;
     let cancelled = false;
-    void pendingSuggestion(playerId)
-      .then((found) => {
-        if (!cancelled) setSuggestion(found);
-      })
-      .catch(() => {});
-
-    const channel = supabase
-      .channel(`suggestions-${playerId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "word_suggestions",
-          filter: `target_player_id=eq.${playerId}`,
-        },
-        (payload) => {
-          const incoming = payload.new as WordSuggestion;
-          if (incoming.status !== "pending") return;
-          setSuggestion(incoming);
+    let lastId: string | null = null;
+    const poll = async () => {
+      try {
+        const found = await pendingSuggestion(playerId);
+        if (cancelled) return;
+        setSuggestion(found);
+        if (found && found.id !== lastId) {
+          lastId = found.id;
           incomingSound();
-        },
-      )
-      .subscribe();
+        }
+        if (!found) lastId = null;
+      } catch {
+        // Ignore transient failures and retry on the next tick.
+      }
+    };
+    void poll();
+    const interval = setInterval(() => void poll(), 3000);
 
     return () => {
       cancelled = true;
-      void supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, [playerId]);
 

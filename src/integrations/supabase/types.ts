@@ -327,76 +327,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      create_room: {
-        Args: { p_code: string }
-        Returns: {
-          code: string
-          id: string
-        }[]
-      }
-      find_room: {
-        Args: { p_code: string }
-        Returns: {
-          code: string
-          id: string
-        }[]
-      }
-      join_room: {
-        Args: { p_name: string; p_room_id: string }
-        Returns: {
-          created_at: string
-          id: string
-          name: string
-          room_id: string
-          token: string
-        }[]
-      }
-      my_suggestion: {
-        Args: { p_player_id: string; p_token: string }
-        Returns: {
-          author_name: string
-          author_player_id: string
-          created_at: string
-          id: string
-          room_id: string
-          status: string
-          target_player_id: string
-          text: string
-        }[]
-      }
-      resolve_suggestion: {
-        Args: {
-          p_player_id: string
-          p_status: string
-          p_suggestion_id: string
-          p_token: string
-        }
-        Returns: undefined
-      }
-      send_suggestion: {
-        Args: {
-          p_author_name: string
-          p_author_player_id: string
-          p_author_token: string
-          p_room_id: string
-          p_target_player_id: string
-          p_text: string
-        }
-        Returns: undefined
-      }
-      set_player_word: {
-        Args: { p_player_id: string; p_token: string; p_word: string }
-        Returns: undefined
-      }
-      sync_player: {
-        Args: { p_name: string; p_player_id: string; p_token: string }
-        Returns: {
-          created_at: string
-          id: string
-          name: string
-          room_id: string
-        }[]
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

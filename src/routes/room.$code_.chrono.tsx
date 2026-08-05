@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ChronoResult } from "@/components/chrono/chrono-result";
 import { ChronoRound } from "@/components/chrono/chrono-round";
-import { supabase } from "@/integrations/supabase/client";
 import { findRoom, listPlayers, savedPlayerId, type Player } from "@/lib/game";
 import {
   activeGame,
@@ -75,8 +74,8 @@ function RoomChrono() {
     setGame(nextGame);
     setTeams(nextTeams);
     setPlayers(nextPlayers);
-    setMembers(await listTeamMembers(nextTeams.map((team) => team.id)));
-    setScores(nextGame ? await listScores(nextGame.id) : []);
+    setMembers(await listTeamMembers(id));
+    setScores(nextGame ? await listScores(id, nextGame.id) : []);
   }, []);
 
   useEffect(() => {
@@ -103,23 +102,13 @@ function RoomChrono() {
     };
   }, [roomCode, navigate, refresh]);
 
+  // Chrono state lives behind server-side membership checks, so we poll it.
   useEffect(() => {
     if (!roomId) return;
-    const channel = supabase
-      .channel(`chrono-${roomId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "chrono_games" }, () => {
-        void refresh(roomId);
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "chrono_scores" }, () => {
-        void refresh(roomId);
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "team_members" }, () => {
-        void refresh(roomId);
-      })
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+    const interval = setInterval(() => {
+      void refresh(roomId).catch(() => {});
+    }, 2000);
+    return () => clearInterval(interval);
   }, [roomId, refresh]);
 
   useEffect(() => {
@@ -179,7 +168,7 @@ function RoomChrono() {
         label={`${currentTeam?.name ?? "Mon équipe"} · manche ${game.current_round}/${game.rounds}`}
         onFinish={(result) => {
           setTurnResult(result);
-          void submitTurn(game, teams, result);
+          void submitTurn(game, result);
         }}
       />
     );
@@ -246,7 +235,7 @@ function RoomChrono() {
         <div className="space-y-3">
           <Button
             onClick={async () => {
-              await archiveGame(game.id);
+              await archiveGame(game.room_id, game.id);
               backToLobby();
             }}
             className="h-14 w-full rounded-2xl text-base font-bold"
