@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { vibrate } from "@/lib/haptics";
 import { createRoom, joinRoom, rememberName, savedName } from "@/lib/game";
 
 export const Route = createFileRoute("/")({
@@ -125,7 +126,10 @@ function Home() {
         {mode === "idle" ? (
           <button
             type="button"
-            onClick={() => setMode("join")}
+            onClick={() => {
+              vibrate("tap");
+              setMode("join");
+            }}
             className="w-full pt-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground"
           >
             Jouer à plusieurs (lobby)

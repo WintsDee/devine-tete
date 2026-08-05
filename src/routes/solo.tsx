@@ -35,7 +35,7 @@ import {
   tickSound,
   unlockAudio,
 } from "@/lib/sfx";
-import { setHapticsEnabled } from "@/lib/haptics";
+import { setHapticsEnabled, vibrate } from "@/lib/haptics";
 import type { BankWord } from "@/lib/words-types";
 
 export const Route = createFileRoute("/solo")({
@@ -283,7 +283,10 @@ function Solo() {
       <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
         <button
           type="button"
-          onClick={() => void navigate({ to: "/" })}
+          onClick={() => {
+            vibrate("tap");
+            void navigate({ to: "/" });
+          }}
           className="grid size-10 shrink-0 place-items-center rounded-full border border-border bg-card/70 text-muted-foreground"
           aria-label="Retour à l'accueil"
         >
@@ -307,7 +310,10 @@ function Solo() {
         </p>
         <motion.button
           type="button"
-          onClick={newWord}
+          onClick={() => {
+            vibrate("tap");
+            newWord();
+          }}
           disabled={busy}
           whileTap={{ scale: 0.94 }}
           className="grid size-56 place-items-center rounded-full bg-primary text-primary-foreground shadow-glow disabled:opacity-70"

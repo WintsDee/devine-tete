@@ -92,6 +92,27 @@ function markSeen(word: string, seen: string[]) {
   window.localStorage.setItem(SEEN_KEY, JSON.stringify(next));
 }
 
+/** Most draws must be easy words: 70% level 1, 22% level 2, 8% level 3. */
+const LEVEL_WEIGHTS: Array<{ level: 1 | 2 | 3; weight: number }> = [
+  { level: 1, weight: 0.7 },
+  { level: 2, weight: 0.22 },
+  { level: 3, weight: 0.08 },
+];
+
+function targetLevel(): 1 | 2 | 3 {
+  const roll = Math.random();
+  let sum = 0;
+  for (const entry of LEVEL_WEIGHTS) {
+    sum += entry.weight;
+    if (roll < sum) return entry.level;
+  }
+  return 1;
+}
+
+function levelOf(entry: BankWord): 1 | 2 | 3 {
+  return entry.level === 2 || entry.level === 3 ? entry.level : 1;
+}
+
 /** Picks an entry never drawn before on this device; resets only once the whole bank is used. */
 export function pickWord(): BankWord {
   let seen = seenWords();
@@ -101,7 +122,10 @@ export function pickWord(): BankWord {
     if (typeof window !== "undefined") window.localStorage.removeItem(SEEN_KEY);
     pool = [...WORD_BANK];
   }
-  const entry = pool[Math.floor(Math.random() * pool.length)]!;
+  const wanted = targetLevel();
+  const byLevel = pool.filter((entry) => levelOf(entry) === wanted);
+  const source = byLevel.length > 0 ? byLevel : pool;
+  const entry = source[Math.floor(Math.random() * source.length)]!;
   markSeen(entry.text, seen);
   return entry;
 }

@@ -352,10 +352,6 @@ function Lobby() {
             Équipe
           </Button>
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Crée des équipes de 2 joueurs ou plus, choisis ton équipe, puis lancez les manches.
-        </p>
-
         <ul className="mt-4 space-y-2">
           {teams.map((team) => (
             <li
