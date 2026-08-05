@@ -153,17 +153,7 @@ export async function listPlayers(roomId: string): Promise<Player[]> {
 }
 
 export async function drawWord(playerId: string | null): Promise<string> {
-  const { count, error: countError } = await supabase
-    .from("words")
-    .select("id", { count: "exact", head: true });
-  if (countError) throw countError;
-  const total = count ?? 0;
-  if (!total) throw new Error("Aucun mot disponible.");
-  const offset = Math.floor(Math.random() * total);
-  const { data, error } = await supabase.from("words").select("text").range(offset, offset);
-  if (error) throw error;
-  const word = data?.[0]?.text;
-  if (!word) throw new Error("Aucun mot disponible.");
+  const word = pickWord();
   if (playerId) {
     await supabase.from("players").update({ current_word: word }).eq("id", playerId);
   }
