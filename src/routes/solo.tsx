@@ -182,7 +182,7 @@ function Solo() {
             className="h-14 flex-col gap-1 rounded-xl text-[11px] font-semibold text-muted-foreground hover:text-foreground"
           >
             <RotateCcw className="size-4" />
-            Relancer
+            Revoir le mot
           </Button>
           <Button
             variant="ghost"
