@@ -19,6 +19,8 @@ export default defineConfig({
         registerType: "autoUpdate",
         injectRegister: null,
         filename: "sw.js",
+        // TanStack Start emits browser assets to dist/client, so the SW must land there too.
+        outDir: "dist/client",
         manifest: false,
         devOptions: { enabled: false },
         workbox: {
