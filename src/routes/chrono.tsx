@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ChronoResult } from "@/components/chrono/chrono-result";
 import { ChronoRound } from "@/components/chrono/chrono-round";
 import { CHRONO_SECONDS, type RoundResult } from "@/lib/chrono";
+import { vibrate } from "@/lib/haptics";
 import { unlockAudio } from "@/lib/sfx";
 
 export const Route = createFileRoute("/chrono")({
@@ -74,7 +75,10 @@ function Chrono() {
       <header className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
         <button
           type="button"
-          onClick={() => void navigate({ to: "/" })}
+          onClick={() => {
+            vibrate("tap");
+            void navigate({ to: "/" });
+          }}
           className="grid size-10 shrink-0 place-items-center rounded-full border border-border bg-card/70 text-muted-foreground"
           aria-label="Retour à l'accueil"
         >
@@ -84,15 +88,11 @@ function Chrono() {
       </header>
 
       <div className="flex flex-1 flex-col items-center justify-center gap-8 text-center">
-        <p className="max-w-xs text-sm text-muted-foreground">
-          Un joueur tient le téléphone et fait deviner le mot affiché (une petite description
-          l'aide), l'autre devine. « Trouvé » marque 1, 2 ou 3 points selon la difficulté du mot,
-          « Passer » enchaîne. Trois minutes, un maximum de points.
-        </p>
         <motion.button
           type="button"
           onClick={() => {
             void unlockAudio();
+            vibrate("tap");
             setPhase("playing");
           }}
           whileTap={{ scale: 0.94 }}

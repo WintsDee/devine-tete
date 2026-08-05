@@ -1,8 +1,17 @@
 const KEY = "dt.haptics";
 
-export type HapticPattern = "tick" | "reveal" | "incoming" | "end" | "score" | "skip" | "final";
+export type HapticPattern =
+  | "tap"
+  | "tick"
+  | "reveal"
+  | "incoming"
+  | "end"
+  | "score"
+  | "skip"
+  | "final";
 
 const PATTERNS: Record<HapticPattern, number | number[]> = {
+  tap: 8,
   tick: 12,
   reveal: [28, 50, 28, 50, 70],
   incoming: [18, 70, 18],
