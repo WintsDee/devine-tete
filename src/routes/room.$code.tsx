@@ -156,6 +156,13 @@ function Lobby() {
 
   const myTeamId = members.find((member) => member.player_id === myId)?.team_id ?? null;
 
+  const refreshTeams = async (id: string) => {
+    const nextTeams = await listTeams(id);
+    setTeams(nextTeams);
+    setMembers(await listTeamMembers(nextTeams.map((team) => team.id)));
+    return nextTeams;
+  };
+
   const teamPlayers = (teamId: string) =>
     members
       .filter((member) => member.team_id === teamId)
@@ -165,7 +172,9 @@ function Lobby() {
   const addTeam = async () => {
     if (!roomId) return;
     try {
-      await createTeam(roomId, `Équipe ${teams.length + 1}`, teams.length);
+      const current = await refreshTeams(roomId);
+      await createTeam(roomId, `Équipe ${current.length + 1}`, current.length);
+      await refreshTeams(roomId);
     } catch {
       toast.error("Impossible de créer l'équipe.");
     }
@@ -178,6 +187,7 @@ function Lobby() {
     }
     try {
       await joinTeam(teamId, myId, teams.map((team) => team.id));
+      if (roomId) await refreshTeams(roomId);
     } catch {
       toast.error("Impossible de rejoindre cette équipe.");
     }
@@ -371,7 +381,10 @@ function Lobby() {
               </button>
               <Button
                 variant="ghost"
-                onClick={() => void deleteTeam(team.id)}
+                onClick={async () => {
+                  await deleteTeam(team.id);
+                  if (roomId) await refreshTeams(roomId);
+                }}
                 className="size-9 shrink-0 rounded-xl p-0 text-muted-foreground"
                 aria-label={`Supprimer ${team.name}`}
               >
