@@ -54,21 +54,23 @@ export function ChronoResult({
         {shown}
       </motion.p>
       <p className="text-sm font-semibold text-muted-foreground">
-        {result.points > 1 ? "mots trouvés" : "mot trouvé"}
+        {result.points > 1 ? "points" : "point"} · {result.found.length}{" "}
+        {result.found.length > 1 ? "mots trouvés" : "mot trouvé"}
         {subtitle ? ` · ${subtitle}` : ""}
       </p>
 
       <div className="mt-6 w-full max-w-sm flex-1 space-y-2 overflow-y-auto">
-        {result.found.map((text, index) => (
+        {result.found.map((item, index) => (
           <motion.p
-            key={`found-${text}-${index}`}
+            key={`found-${item.text}-${index}`}
             initial={{ opacity: 0, x: -12 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 + index * 0.04 }}
             className="flex items-center gap-2 rounded-2xl border border-border bg-card/70 px-4 py-2 text-sm font-medium"
           >
             <Check className="size-4 shrink-0 text-primary" />
-            <span className="truncate">{text}</span>
+            <span className="flex-1 truncate">{item.text}</span>
+            <span className="text-word shrink-0 font-display font-bold">+{item.value}</span>
           </motion.p>
         ))}
         {result.skipped.map((text, index) => (
