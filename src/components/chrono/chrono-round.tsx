@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { useWakeLock } from "@/hooks/use-wake-lock";
 import { pickWord } from "@/lib/game";
 import { endSound, scoreSound, skipSound, tickSound, unlockAudio } from "@/lib/sfx";
+import { VALUE_LABEL, wordValue } from "@/lib/difficulty";
 import type { BankWord } from "@/lib/words-types";
-import type { RoundResult } from "@/lib/chrono";
+import type { FoundWord, RoundResult } from "@/lib/chrono";
 
 function format(seconds: number) {
   const minutes = Math.floor(seconds / 60);
@@ -27,9 +28,10 @@ export function ChronoRound({ durationSeconds, label, onFinish }: Props) {
   const [word, setWord] = useState<BankWord>(() => pickWord());
   const [points, setPoints] = useState(0);
   const [flash, setFlash] = useState<"found" | "skip" | null>(null);
-  const found = useRef<string[]>([]);
+  const found = useRef<FoundWord[]>([]);
   const skipped = useRef<string[]>([]);
   const done = useRef(false);
+  const value = wordValue(word);
 
   useWakeLock(true);
 
@@ -37,7 +39,11 @@ export function ChronoRound({ durationSeconds, label, onFinish }: Props) {
     if (done.current) return;
     done.current = true;
     endSound();
-    onFinish({ points: found.current.length, found: found.current, skipped: skipped.current });
+    onFinish({
+      points: found.current.reduce((total, item) => total + item.value, 0),
+      found: found.current,
+      skipped: skipped.current,
+    });
   }, [onFinish]);
 
   useEffect(() => {
@@ -60,8 +66,8 @@ export function ChronoRound({ durationSeconds, label, onFinish }: Props) {
   const next = (kind: "found" | "skip") => {
     if (done.current) return;
     if (kind === "found") {
-      found.current = [...found.current, word.text];
-      setPoints((value) => value + 1);
+      found.current = [...found.current, { text: word.text, value }];
+      setPoints((current) => current + value);
       scoreSound();
     } else {
       skipped.current = [...skipped.current, word.text];
@@ -106,6 +112,15 @@ export function ChronoRound({ durationSeconds, label, onFinish }: Props) {
             transition={{ duration: 0.22 }}
             className="flex flex-col items-center gap-4"
           >
+            <span
+              className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-widest ${
+                value === 1
+                  ? "border-border text-muted-foreground"
+                  : "border-primary text-primary"
+              }`}
+            >
+              +{value} · {VALUE_LABEL[value]}
+            </span>
             <p className="text-word text-glow font-display text-[clamp(2.5rem,12vw,6rem)] font-bold uppercase leading-[0.95] [text-wrap:balance]">
               {word.text}
             </p>
