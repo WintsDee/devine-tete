@@ -35,7 +35,9 @@ export type ChronoScore = {
   skipped_words: unknown;
 };
 
-export type RoundResult = { points: number; found: string[]; skipped: string[] };
+export type FoundWord = { text: string; value: number };
+
+export type RoundResult = { points: number; found: FoundWord[]; skipped: string[] };
 
 export const TEAM_COLORS = ["yellow", "pink", "cyan", "lime", "orange", "violet"] as const;
 
