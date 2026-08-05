@@ -49,6 +49,7 @@ import {
   unlockAudio,
 } from "@/lib/sfx";
 import { setHapticsEnabled } from "@/lib/haptics";
+import type { BankWord } from "@/lib/words-types";
 
 export const Route = createFileRoute("/play/$code")({
   head: () => ({
@@ -79,7 +80,7 @@ function Play() {
   const navigate = useNavigate();
   const playerId = savedPlayerId(roomCode);
   const [phase, setPhase] = useState<Phase>("idle");
-  const [word, setWord] = useState<string | null>(null);
+  const [word, setWord] = useState<BankWord | null>(null);
   const [count, setCount] = useState(5);
   const [frontLeft, setFrontLeft] = useState(FRONT_SECONDS);
   const [busy, setBusy] = useState(false);
@@ -200,7 +201,7 @@ function Play() {
     if (!text) return;
     setManualOpen(false);
     setManualWord("");
-    setWord(text);
+    setWord({ text, category: "Manuel" });
     startCountdown();
     if (playerId) await setPlayerWord(playerId, text);
   };
@@ -209,7 +210,7 @@ function Play() {
     if (!suggestion) return;
     setBusy(true);
     try {
-      setWord(await useSuggestion(suggestion, playerId));
+      setWord({ text: await useSuggestion(suggestion, playerId), category: "Souffl\u00e9" });
       setSuggestion(null);
       startCountdown();
     } catch {
@@ -240,16 +241,21 @@ function Play() {
         <p className="pt-[max(0.75rem,env(safe-area-inset-top))] text-center text-sm font-semibold uppercase tracking-[0.3em] text-muted-foreground">
           Caché dans {frontLeft} s
         </p>
-        <div className="flex flex-1 items-center justify-center px-6 py-10">
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10">
           <motion.p
-            key={word}
+            key={word.text}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.35 }}
             className="text-word text-glow text-center font-display font-bold uppercase leading-[0.95] [text-wrap:balance] text-[clamp(3rem,17vw,9rem)] landscape:text-[clamp(3rem,13vh,11rem)]"
           >
-            {word}
+            {word.text}
           </motion.p>
+          {word.hint ? (
+            <p className="max-w-md text-center text-sm text-muted-foreground [text-wrap:balance]">
+              {word.hint}
+            </p>
+          ) : null}
         </div>
         <div className="grid grid-cols-3 gap-2 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <Button

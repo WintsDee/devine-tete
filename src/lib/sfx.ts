@@ -87,7 +87,7 @@ const NOTE = {
   E6: 1318.51,
 } as const;
 
-function play(name: "tick" | "reveal" | "incoming" | "end", step = 0) {
+function play(name: HapticPattern, step = 0) {
   if (!soundEnabled()) return;
   void unlockAudio();
   switch (name) {
@@ -114,6 +114,23 @@ function play(name: "tick" | "reveal" | "incoming" | "end", step = 0) {
       tone({ freq: NOTE.G4, start: 0.12, duration: 0.4, gain: 0.12, type: "triangle" });
       break;
     }
+    case "score": {
+      tone({ freq: NOTE.G5, duration: 0.16, gain: 0.16, type: "sine" });
+      tone({ freq: NOTE.B5, start: 0.07, duration: 0.22, gain: 0.13, type: "sine" });
+      break;
+    }
+    case "skip": {
+      tone({ freq: NOTE.A4, duration: 0.12, gain: 0.1, type: "triangle" });
+      tone({ freq: NOTE.E4, start: 0.07, duration: 0.18, gain: 0.09, type: "triangle" });
+      break;
+    }
+    case "final": {
+      tone({ freq: NOTE.C5, duration: 0.5, gain: 0.18 });
+      tone({ freq: NOTE.E5, start: 0.12, duration: 0.5, gain: 0.16 });
+      tone({ freq: NOTE.G5, start: 0.24, duration: 0.6, gain: 0.14 });
+      tone({ freq: NOTE.E6, start: 0.36, duration: 0.9, gain: 0.12 });
+      break;
+    }
   }
 }
 
@@ -127,3 +144,6 @@ export const tickSound = (remaining: number) => cue("tick", 5 - remaining);
 export const revealSound = () => cue("reveal");
 export const incomingSound = () => cue("incoming");
 export const endSound = () => cue("end");
+export const scoreSound = () => cue("score");
+export const skipSound = () => cue("skip");
+export const finalSound = () => cue("final");
