@@ -6,7 +6,7 @@ export type Player = {
   id: string;
   room_id: string;
   name: string;
-  current_word: string | null;
+  has_word: boolean;
   created_at: string;
 };
 
@@ -23,8 +23,32 @@ export type WordSuggestion = {
 
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ";
 const PLAYER_KEY = "dt.player";
+const TOKEN_KEY = "dt.playerToken";
 const NAME_KEY = "dt.name";
 const SEEN_KEY = "dt.seenWords";
+
+const PLAYER_COLUMNS = "id, room_id, name, has_word, created_at";
+
+function readMap(key: string): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(window.localStorage.getItem(key) ?? "{}") as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+
+/** Private per-player token proving ownership of a player row server-side. */
+export function savedPlayerToken(playerId: string | null): string | null {
+  if (!playerId) return null;
+  return readMap(TOKEN_KEY)[playerId] ?? null;
+}
+
+function rememberToken(playerId: string, token: string) {
+  const map = readMap(TOKEN_KEY);
+  map[playerId] = token;
+  window.localStorage.setItem(TOKEN_KEY, JSON.stringify(map));
+}
 
 function seenWords(): string[] {
   if (typeof window === "undefined") return [];
@@ -75,24 +99,11 @@ export function rememberName(name: string) {
 
 export function savedPlayerId(code: string): string | null {
   if (typeof window === "undefined") return null;
-  try {
-    const map = JSON.parse(window.localStorage.getItem(PLAYER_KEY) ?? "{}") as Record<
-      string,
-      string
-    >;
-    return map[code] ?? null;
-  } catch {
-    return null;
-  }
+  return readMap(PLAYER_KEY)[code] ?? null;
 }
 
 function rememberPlayer(code: string, playerId: string) {
-  let map: Record<string, string> = {};
-  try {
-    map = JSON.parse(window.localStorage.getItem(PLAYER_KEY) ?? "{}") as Record<string, string>;
-  } catch {
-    map = {};
-  }
+  const map = readMap(PLAYER_KEY);
   map[code] = playerId;
   window.localStorage.setItem(PLAYER_KEY, JSON.stringify(map));
 }
@@ -100,8 +111,9 @@ function rememberPlayer(code: string, playerId: string) {
 export async function createRoom(name: string): Promise<string> {
   for (let attempt = 0; attempt < 8; attempt += 1) {
     const code = randomCode();
-    const { data, error } = await supabase.from("rooms").insert({ code }).select("code").single();
-    if (!error && data) {
+    const { data, error } = await supabase.rpc("create_room", { p_code: code });
+    const room = data?.[0];
+    if (!error && room) {
       await joinRoom(code, name);
       return code;
     }
@@ -111,65 +123,81 @@ export async function createRoom(name: string): Promise<string> {
 }
 
 export async function findRoom(code: string) {
-  const { data, error } = await supabase
-    .from("rooms")
-    .select("id, code")
-    .eq("code", code.toUpperCase())
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("find_room", { p_code: code.toUpperCase() });
   if (error) throw error;
-  return data;
+  return data?.[0] ?? null;
 }
 
 export async function joinRoom(code: string, name: string): Promise<Player> {
   const room = await findRoom(code);
   if (!room) throw new Error("Aucune partie avec ce code.");
   const existingId = savedPlayerId(room.code);
-  if (existingId) {
-    const { data } = await supabase.from("players").select("*").eq("id", existingId).maybeSingle();
-    if (data) {
-      if (data.name !== name) {
-        await supabase.from("players").update({ name }).eq("id", data.id);
-      }
-      return { ...data, name } as Player;
+  const existingToken = savedPlayerToken(existingId);
+  if (existingId && existingToken) {
+    const { data } = await supabase.rpc("sync_player", {
+      p_player_id: existingId,
+      p_token: existingToken,
+      p_name: name,
+    });
+    const synced = data?.[0];
+    if (synced) {
+      const { data: fresh } = await supabase
+        .from("players")
+        .select(PLAYER_COLUMNS)
+        .eq("id", synced.id)
+        .maybeSingle();
+      return (fresh ?? { ...synced, has_word: false }) as Player;
     }
   }
-  const { data, error } = await supabase
-    .from("players")
-    .insert({ room_id: room.id, name })
-    .select("*")
-    .single();
+  const { data, error } = await supabase.rpc("join_room", { p_room_id: room.id, p_name: name });
+  const created = data?.[0];
   if (error) throw error;
-  rememberPlayer(room.code, data.id);
-  return data as Player;
+  if (!created) throw new Error("Impossible de rejoindre la partie.");
+  rememberPlayer(room.code, created.id);
+  rememberToken(created.id, created.token);
+  return {
+    id: created.id,
+    room_id: created.room_id,
+    name: created.name,
+    has_word: false,
+    created_at: created.created_at,
+  };
 }
 
 export async function listPlayers(roomId: string): Promise<Player[]> {
   const { data, error } = await supabase
     .from("players")
-    .select("*")
+    .select(PLAYER_COLUMNS)
     .eq("room_id", roomId)
     .order("created_at", { ascending: true });
   if (error) throw error;
   return (data ?? []) as Player[];
 }
 
+async function writeWord(playerId: string | null, word: string | null) {
+  const token = savedPlayerToken(playerId);
+  if (!playerId || !token) return;
+  const { error } = await supabase.rpc("set_player_word", {
+    p_player_id: playerId,
+    p_token: token,
+    p_word: word ?? "",
+  });
+  if (error) throw error;
+}
+
 export async function drawWord(playerId: string | null): Promise<BankWord> {
   const entry = pickWord();
-  if (playerId) {
-    await supabase.from("players").update({ current_word: entry.text }).eq("id", playerId);
-  }
+  await writeWord(playerId, entry.text);
   return entry;
 }
 
 export async function clearWord(playerId: string | null) {
-  if (!playerId) return;
-  await supabase.from("players").update({ current_word: null }).eq("id", playerId);
+  await writeWord(playerId, null);
 }
 
 /** Stores a word typed by hand on the player's phone. */
 export async function setPlayerWord(playerId: string | null, word: string) {
-  if (!playerId) return;
-  await supabase.from("players").update({ current_word: word }).eq("id", playerId);
+  await writeWord(playerId, word);
 }
 
 export async function sendSuggestion(params: {
@@ -183,44 +211,53 @@ export async function sendSuggestion(params: {
   if (text.length < 1 || text.length > 60) {
     throw new Error("Le mot doit faire entre 1 et 60 caractères.");
   }
-  const { error } = await supabase.from("word_suggestions").insert({
-    room_id: params.roomId,
-    target_player_id: params.targetPlayerId,
-    author_player_id: params.authorPlayerId,
-    author_name: params.authorName || "Un voisin",
-    text,
+  const token = savedPlayerToken(params.authorPlayerId);
+  if (!params.authorPlayerId || !token) {
+    throw new Error("Rejoins la partie avant de souffler un mot.");
+  }
+  const { error } = await supabase.rpc("send_suggestion", {
+    p_room_id: params.roomId,
+    p_target_player_id: params.targetPlayerId,
+    p_author_player_id: params.authorPlayerId,
+    p_author_token: token,
+    p_author_name: params.authorName || "Un voisin",
+    p_text: text,
   });
   if (error) throw error;
 }
-
-const SUGGESTION_TTL_MS = 10 * 60 * 1000;
 
 /** Latest still-valid suggestion for a player (older than 10 min is ignored). */
 export async function pendingSuggestion(
   playerId: string | null,
 ): Promise<WordSuggestion | null> {
-  if (!playerId) return null;
-  const since = new Date(Date.now() - SUGGESTION_TTL_MS).toISOString();
-  const { data, error } = await supabase
-    .from("word_suggestions")
-    .select("*")
-    .eq("target_player_id", playerId)
-    .eq("status", "pending")
-    .gte("created_at", since)
-    .order("created_at", { ascending: false })
-    .limit(1);
+  const token = savedPlayerToken(playerId);
+  if (!playerId || !token) return null;
+  const { data, error } = await supabase.rpc("my_suggestion", {
+    p_player_id: playerId,
+    p_token: token,
+  });
   if (error) throw error;
   return (data?.[0] as WordSuggestion | undefined) ?? null;
 }
 
-export async function resolveSuggestion(id: string, status: "used" | "skipped") {
-  await supabase.from("word_suggestions").update({ status }).eq("id", id);
+export async function resolveSuggestion(
+  id: string,
+  playerId: string | null,
+  status: "used" | "skipped",
+) {
+  const token = savedPlayerToken(playerId);
+  if (!playerId || !token) return;
+  const { error } = await supabase.rpc("resolve_suggestion", {
+    p_suggestion_id: id,
+    p_player_id: playerId,
+    p_token: token,
+    p_status: status,
+  });
+  if (error) throw error;
 }
 
 export async function useSuggestion(suggestion: WordSuggestion, playerId: string | null) {
-  await resolveSuggestion(suggestion.id, "used");
-  if (playerId) {
-    await supabase.from("players").update({ current_word: suggestion.text }).eq("id", playerId);
-  }
+  await resolveSuggestion(suggestion.id, playerId, "used");
+  await writeWord(playerId, suggestion.text);
   return suggestion.text;
 }

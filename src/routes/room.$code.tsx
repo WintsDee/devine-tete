@@ -315,7 +315,7 @@ function Lobby() {
                     {player.id === myId ? " (toi)" : ""}
                   </span>
                   <span className="flex shrink-0 items-center gap-2">
-                    {player.current_word ? (
+                    {player.has_word ? (
                       <span className="text-xs font-semibold uppercase tracking-wide text-accent">
                         en jeu
                       </span>
