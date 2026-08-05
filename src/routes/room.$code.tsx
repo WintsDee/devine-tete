@@ -109,7 +109,7 @@ function Lobby() {
         setMembers(await listTeamMembers(nextTeams.map((team) => team.id)));
         const running = await activeGame(room.id);
         if (running && running.status !== "finished") {
-          await navigate({ to: "/room/$code_/chrono", params: { code: roomCode } });
+          await navigate({ to: "/room/$code/chrono", params: { code: roomCode } });
           return;
         }
       } catch (error) {
@@ -146,7 +146,7 @@ function Lobby() {
         });
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "chrono_games" }, () => {
-        void navigate({ to: "/room/$code_/chrono", params: { code: roomCode } });
+        void navigate({ to: "/room/$code/chrono", params: { code: roomCode } });
       })
       .subscribe();
     return () => {
@@ -203,7 +203,7 @@ function Lobby() {
     setLaunching(true);
     try {
       await createGame(roomId, rounds, ready[0]!.id);
-      await navigate({ to: "/room/$code_/chrono", params: { code: roomCode } });
+      await navigate({ to: "/room/$code/chrono", params: { code: roomCode } });
     } catch {
       toast.error("Impossible de lancer le Chrono.");
     } finally {
