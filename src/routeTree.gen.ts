@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SoloRouteImport } from './routes/solo'
 import { Route as PlayCodeRouteImport } from './routes/play.$code'
 import { Route as RoomCodeRouteImport } from './routes/room.$code'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SoloRoute = SoloRouteImport.update({
+  id: '/solo',
+  path: '/solo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlayCodeRoute = PlayCodeRouteImport.update({
@@ -31,30 +37,34 @@ const RoomCodeRoute = RoomCodeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/solo': typeof SoloRoute
   '/play/$code': typeof PlayCodeRoute
   '/room/$code': typeof RoomCodeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/solo': typeof SoloRoute
   '/play/$code': typeof PlayCodeRoute
   '/room/$code': typeof RoomCodeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/solo': typeof SoloRoute
   '/play/$code': typeof PlayCodeRoute
   '/room/$code': typeof RoomCodeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/play/$code' | '/room/$code'
+  fullPaths: '/' | '/solo' | '/play/$code' | '/room/$code'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/play/$code' | '/room/$code'
-  id: '__root__' | '/' | '/play/$code' | '/room/$code'
+  to: '/' | '/solo' | '/play/$code' | '/room/$code'
+  id: '__root__' | '/' | '/solo' | '/play/$code' | '/room/$code'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SoloRoute: typeof SoloRoute
   PlayCodeRoute: typeof PlayCodeRoute
   RoomCodeRoute: typeof RoomCodeRoute
 }
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solo': {
+      id: '/solo'
+      path: '/solo'
+      fullPath: '/solo'
+      preLoaderRoute: typeof SoloRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/play/$code': {
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SoloRoute: SoloRoute,
   PlayCodeRoute: PlayCodeRoute,
   RoomCodeRoute: RoomCodeRoute,
 }

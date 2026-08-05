@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, PartyPopper, Sparkles, Users } from "lucide-react";
+import { Loader2, PartyPopper, Sparkles, Users, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -169,6 +169,17 @@ function Home() {
         <p className="text-center text-xs text-muted-foreground">
           Astuce : scanne le QR code d'un ami pour entrer directement dans sa partie.
         </p>
+
+        <div className="border-t border-border pt-4">
+          <Button
+            variant="outline"
+            onClick={() => void navigate({ to: "/solo" })}
+            className="h-12 w-full rounded-2xl text-sm font-bold"
+          >
+            <Zap className="size-4" />
+            Jouer tout de suite (sans lobby)
+          </Button>
+        </div>
       </motion.div>
     </main>
   );
