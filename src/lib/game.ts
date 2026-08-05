@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { WORD_BANK } from "@/lib/words";
 
 export type Player = {
   id: string;
@@ -22,6 +23,38 @@ export type WordSuggestion = {
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ";
 const PLAYER_KEY = "dt.player";
 const NAME_KEY = "dt.name";
+const SEEN_KEY = "dt.seenWords";
+
+function seenWords(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(SEEN_KEY);
+    const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function markSeen(word: string, seen: string[]) {
+  if (typeof window === "undefined") return;
+  const next = [...seen, word];
+  window.localStorage.setItem(SEEN_KEY, JSON.stringify(next));
+}
+
+/** Picks a word never drawn before on this device; resets only once the whole bank is used. */
+export function pickWord(): string {
+  let seen = seenWords();
+  let pool = WORD_BANK.filter((entry) => !seen.includes(entry.text));
+  if (pool.length === 0) {
+    seen = [];
+    if (typeof window !== "undefined") window.localStorage.removeItem(SEEN_KEY);
+    pool = [...WORD_BANK];
+  }
+  const word = pool[Math.floor(Math.random() * pool.length)]!.text;
+  markSeen(word, seen);
+  return word;
+}
 
 function randomCode() {
   return Array.from(
@@ -120,17 +153,7 @@ export async function listPlayers(roomId: string): Promise<Player[]> {
 }
 
 export async function drawWord(playerId: string | null): Promise<string> {
-  const { count, error: countError } = await supabase
-    .from("words")
-    .select("id", { count: "exact", head: true });
-  if (countError) throw countError;
-  const total = count ?? 0;
-  if (!total) throw new Error("Aucun mot disponible.");
-  const offset = Math.floor(Math.random() * total);
-  const { data, error } = await supabase.from("words").select("text").range(offset, offset);
-  if (error) throw error;
-  const word = data?.[0]?.text;
-  if (!word) throw new Error("Aucun mot disponible.");
+  const word = pickWord();
   if (playerId) {
     await supabase.from("players").update({ current_word: word }).eq("id", playerId);
   }
