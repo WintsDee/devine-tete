@@ -143,7 +143,7 @@ export function ChronoRound({ durationSeconds, label, onFinish }: Props) {
           className={`h-20 flex-col gap-1 rounded-3xl text-sm font-bold ${flash === "skip" ? "opacity-60" : ""}`}
         >
           <SkipForward className="size-6" />
-          Passer
+          Passer (-1)
         </Button>
         <Button
           onClick={() => next("found")}
