@@ -133,7 +133,7 @@ function Play() {
   // While the word is on the forehead, count 10 s down, then hide it.
   useEffect(() => {
     if (phase !== "front") return;
-    setFrontLeft(FRONT_SECONDS);
+    if (held) return;
     const interval = setInterval(() => {
       setFrontLeft((left) => {
         if (left <= 1) {
@@ -146,6 +146,10 @@ function Play() {
       });
     }, 1000);
     return () => clearInterval(interval);
+  }, [phase, held]);
+
+  useEffect(() => {
+    if (phase === "front") setFrontLeft(FRONT_SECONDS);
   }, [phase]);
 
   // Words whispered by other players are fetched through the guarded server
@@ -232,7 +236,7 @@ function Play() {
     return (
       <main className="flex min-h-[100dvh] flex-col bg-black">
         <p className="pt-[max(0.75rem,env(safe-area-inset-top))] text-center text-sm font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-          Caché dans {frontLeft} s
+          {held ? "En pause" : `Caché dans ${frontLeft} s`}
         </p>
         <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10">
           <motion.p
@@ -250,7 +254,18 @@ function Play() {
             </p>
           ) : null}
         </div>
-        <div className="grid grid-cols-3 gap-2 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="grid grid-cols-4 gap-2 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <Button
+            variant="ghost"
+            onClick={() => {
+              vibrate("tap");
+              setHeld((current) => !current);
+            }}
+            className={`h-14 flex-col gap-1 rounded-xl text-[11px] font-semibold hover:text-foreground ${held ? "text-primary" : "text-muted-foreground"}`}
+          >
+            {held ? <Play className="size-4" /> : <Pause className="size-4" />}
+            Hold
+          </Button>
           <Button
             variant="ghost"
             onClick={startCountdown}
