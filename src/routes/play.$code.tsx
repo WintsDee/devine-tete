@@ -266,7 +266,7 @@ function Play() {
             }}
             className={`h-14 flex-col gap-1 rounded-xl text-[11px] font-semibold hover:text-foreground ${held ? "text-primary" : "text-muted-foreground"}`}
           >
-            {held ? <Play className="size-4" /> : <Pause className="size-4" />}
+            {held ? <PlayIcon className="size-4" /> : <PauseIcon className="size-4" />}
             Hold
           </Button>
           <Button
