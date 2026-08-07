@@ -8,6 +8,8 @@ import {
   Keyboard,
   Loader2,
   MessageSquareQuote,
+  Pause as PauseIcon,
+  Play as PlayIcon,
   RotateCcw,
   Shuffle,
   Volume2,
@@ -82,6 +84,7 @@ function Play() {
   const [word, setWord] = useState<BankWord | null>(null);
   const [count, setCount] = useState(5);
   const [frontLeft, setFrontLeft] = useState(FRONT_SECONDS);
+  const [held, setHeld] = useState(false);
   const [busy, setBusy] = useState(false);
   const [suggestion, setSuggestion] = useState<WordSuggestion | null>(null);
   const [sound, setSound] = useState(true);
