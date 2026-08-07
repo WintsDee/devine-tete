@@ -40,9 +40,7 @@ export function ChronoRound({ durationSeconds, label, onFinish }: Props) {
     done.current = true;
     endSound();
     onFinish({
-      points:
-        found.current.reduce((total, item) => total + item.value, 0) -
-        skipped.current.length,
+      points: found.current.reduce((total, item) => total + item.value, 0),
       found: found.current,
       skipped: skipped.current,
     });
@@ -73,7 +71,6 @@ export function ChronoRound({ durationSeconds, label, onFinish }: Props) {
       scoreSound();
     } else {
       skipped.current = [...skipped.current, word.text];
-      setPoints((current) => current - 1);
       skipSound();
     }
     setFlash(kind);
@@ -143,7 +140,7 @@ export function ChronoRound({ durationSeconds, label, onFinish }: Props) {
           className={`h-20 flex-col gap-1 rounded-3xl text-sm font-bold ${flash === "skip" ? "opacity-60" : ""}`}
         >
           <SkipForward className="size-6" />
-          Passer (-1)
+          Passer
         </Button>
         <Button
           onClick={() => next("found")}

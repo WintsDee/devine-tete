@@ -22,14 +22,12 @@ export function ChronoResult({
   useEffect(() => {
     finalSound();
     if (result.points === 0) return;
-    const target = result.points;
-    const sign = target > 0 ? 1 : -1;
     let current = 0;
-    const step = Math.max(30, Math.round(900 / Math.abs(target)));
+    const step = Math.max(30, Math.round(900 / result.points));
     const interval = setInterval(() => {
-      current += sign;
+      current += 1;
       setShown(current);
-      if (Math.abs(current) >= Math.abs(target)) clearInterval(interval);
+      if (current >= result.points) clearInterval(interval);
     }, step);
     return () => clearInterval(interval);
   }, [result.points]);
@@ -56,11 +54,8 @@ export function ChronoResult({
         {shown}
       </motion.p>
       <p className="text-sm font-semibold text-muted-foreground">
-        {Math.abs(result.points) > 1 ? "points" : "point"} · {result.found.length}{" "}
+        {result.points > 1 ? "points" : "point"} · {result.found.length}{" "}
         {result.found.length > 1 ? "mots trouvés" : "mot trouvé"}
-        {result.skipped.length > 0
-          ? ` · ${result.skipped.length} passé${result.skipped.length > 1 ? "s" : ""} (-${result.skipped.length})`
-          : ""}
         {subtitle ? ` · ${subtitle}` : ""}
       </p>
 
@@ -87,8 +82,7 @@ export function ChronoResult({
             className="flex items-center gap-2 rounded-2xl border border-border bg-card/40 px-4 py-2 text-sm text-muted-foreground"
           >
             <SkipForward className="size-4 shrink-0" />
-            <span className="flex-1 truncate">{text}</span>
-            <span className="shrink-0 font-display font-bold text-destructive">-1</span>
+            <span className="truncate">{text}</span>
           </motion.p>
         ))}
       </div>
