@@ -40,7 +40,9 @@ export function ChronoRound({ durationSeconds, label, onFinish }: Props) {
     done.current = true;
     endSound();
     onFinish({
-      points: found.current.reduce((total, item) => total + item.value, 0),
+      points:
+        found.current.reduce((total, item) => total + item.value, 0) -
+        skipped.current.length,
       found: found.current,
       skipped: skipped.current,
     });
@@ -71,6 +73,7 @@ export function ChronoRound({ durationSeconds, label, onFinish }: Props) {
       scoreSound();
     } else {
       skipped.current = [...skipped.current, word.text];
+      setPoints((current) => current - 1);
       skipSound();
     }
     setFlash(kind);
