@@ -115,6 +115,7 @@ function Play() {
     void unlockAudio();
     setCount(5);
     setFrontLeft(FRONT_SECONDS);
+    setHeld(false);
     setPhase("countdown");
     tickSound(5);
     timer.current = setInterval(() => {
