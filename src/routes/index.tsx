@@ -110,7 +110,7 @@ function Home() {
           onClick={() => void navigate({ to: "/solo" })}
           className="h-16 w-full justify-between rounded-2xl px-5 text-lg font-bold"
         >
-          Jouer (sans lobby)
+          Jouer
           <Zap className="size-5" />
         </Button>
 

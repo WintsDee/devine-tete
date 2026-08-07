@@ -7,6 +7,8 @@ import {
   EyeOff,
   Keyboard,
   Loader2,
+  Pause,
+  Play,
   RotateCcw,
   Shuffle,
   Volume2,
@@ -67,6 +69,7 @@ function Solo() {
   const [word, setWord] = useState<BankWord | null>(null);
   const [count, setCount] = useState(5);
   const [frontLeft, setFrontLeft] = useState(FRONT_SECONDS);
+  const [held, setHeld] = useState(false);
   const [busy, setBusy] = useState(false);
   const [sound, setSound] = useState(true);
   const [manualOpen, setManualOpen] = useState(false);
@@ -96,6 +99,7 @@ function Solo() {
     void unlockAudio();
     setCount(5);
     setFrontLeft(FRONT_SECONDS);
+    setHeld(false);
     setPhase("countdown");
     tickSound(5);
     timer.current = setInterval(() => {
@@ -116,7 +120,7 @@ function Solo() {
 
   useEffect(() => {
     if (phase !== "front") return;
-    setFrontLeft(FRONT_SECONDS);
+    if (held) return;
     const interval = setInterval(() => {
       setFrontLeft((left) => {
         if (left <= 1) {
@@ -129,6 +133,10 @@ function Solo() {
       });
     }, 1000);
     return () => clearInterval(interval);
+  }, [phase, held]);
+
+  useEffect(() => {
+    if (phase === "front") setFrontLeft(FRONT_SECONDS);
   }, [phase]);
 
   const newWord = async () => {
@@ -163,7 +171,7 @@ function Solo() {
     return (
       <main className="flex min-h-[100dvh] flex-col bg-black">
         <p className="pt-[max(0.75rem,env(safe-area-inset-top))] text-center text-sm font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-          Caché dans {frontLeft} s
+          {held ? "En pause" : `Caché dans ${frontLeft} s`}
         </p>
         <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10">
           <motion.p
@@ -181,7 +189,18 @@ function Solo() {
             </p>
           ) : null}
         </div>
-        <div className="grid grid-cols-3 gap-2 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="grid grid-cols-4 gap-2 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <Button
+            variant="ghost"
+            onClick={() => {
+              vibrate("tap");
+              setHeld((current) => !current);
+            }}
+            className={`h-14 flex-col gap-1 rounded-xl text-[11px] font-semibold hover:text-foreground ${held ? "text-primary" : "text-muted-foreground"}`}
+          >
+            {held ? <Play className="size-4" /> : <Pause className="size-4" />}
+            Hold
+          </Button>
           <Button
             variant="ghost"
             onClick={startCountdown}
