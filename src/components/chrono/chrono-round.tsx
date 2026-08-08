@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, SkipForward, Timer } from "lucide-react";
+import { Check, Lightbulb, SkipForward, Timer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useWakeLock } from "@/hooks/use-wake-lock";
 import { pickWord } from "@/lib/game";
 import { endSound, scoreSound, skipSound, tickSound, unlockAudio } from "@/lib/sfx";
+import { vibrate } from "@/lib/haptics";
 import { VALUE_LABEL, wordValue } from "@/lib/difficulty";
 import type { BankWord } from "@/lib/words-types";
 import type { FoundWord, RoundResult } from "@/lib/chrono";
@@ -28,6 +29,7 @@ export function ChronoRound({ durationSeconds, label, onFinish }: Props) {
   const [word, setWord] = useState<BankWord>(() => pickWord());
   const [points, setPoints] = useState(0);
   const [flash, setFlash] = useState<"found" | "skip" | null>(null);
+  const [hintStep, setHintStep] = useState(0);
   const found = useRef<FoundWord[]>([]);
   const skipped = useRef<string[]>([]);
   const done = useRef(false);
@@ -75,8 +77,11 @@ export function ChronoRound({ durationSeconds, label, onFinish }: Props) {
     }
     setFlash(kind);
     setTimeout(() => setFlash(null), 220);
+    setHintStep(0);
     setWord(pickWord());
   };
+
+  const maxHintStep = word.hint ? 2 : 1;
 
   const progress = Math.max(0, Math.min(1, left / durationSeconds));
 
@@ -112,9 +117,15 @@ export function ChronoRound({ durationSeconds, label, onFinish }: Props) {
             transition={{ duration: 0.22 }}
             className="flex flex-col items-center gap-4"
           >
-            <p className="text-center text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground">
-              {word.category}
-            </p>
+            {hintStep >= 1 ? (
+              <motion.p
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground"
+              >
+                {word.category}
+              </motion.p>
+            ) : null}
             <span
               className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-widest ${
                 value === 1
@@ -127,13 +138,36 @@ export function ChronoRound({ durationSeconds, label, onFinish }: Props) {
             <p className="text-word text-glow font-display text-[clamp(2.5rem,12vw,6rem)] font-bold uppercase leading-[0.95] [text-wrap:balance]">
               {word.text}
             </p>
-            {word.hint ? (
-              <p className="max-w-sm text-sm text-muted-foreground [text-wrap:balance]">
+            {word.hint && hintStep >= 2 ? (
+              <motion.p
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="max-w-sm text-sm text-muted-foreground [text-wrap:balance]"
+              >
                 {word.hint}
-              </p>
+              </motion.p>
             ) : null}
           </motion.div>
         </AnimatePresence>
+      </div>
+
+      <div className="px-4">
+        <Button
+          variant="ghost"
+          onClick={() => {
+            vibrate("tap");
+            setHintStep((current) => Math.min(current + 1, maxHintStep));
+          }}
+          disabled={hintStep >= maxHintStep}
+          className="h-12 w-full rounded-2xl text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+        >
+          <Lightbulb className="mr-2 size-4" />
+          {hintStep === 0
+            ? "Indice : catégorie"
+            : hintStep < maxHintStep
+              ? "Indice : détail"
+              : "Plus d'indice"}
+        </Button>
       </div>
 
       <div className="grid grid-cols-2 gap-3 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
