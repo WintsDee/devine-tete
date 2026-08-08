@@ -6,6 +6,7 @@ import {
   Check,
   EyeOff,
   Keyboard,
+  Lightbulb,
   Loader2,
   MessageSquareQuote,
   Pause as PauseIcon,
@@ -85,6 +86,7 @@ function Play() {
   const [count, setCount] = useState(5);
   const [frontLeft, setFrontLeft] = useState(FRONT_SECONDS);
   const [held, setHeld] = useState(false);
+  const [hintStep, setHintStep] = useState(0);
   const [busy, setBusy] = useState(false);
   const [suggestion, setSuggestion] = useState<WordSuggestion | null>(null);
   const [sound, setSound] = useState(true);
@@ -116,6 +118,7 @@ function Play() {
     setCount(5);
     setFrontLeft(FRONT_SECONDS);
     setHeld(false);
+    setHintStep(0);
     setPhase("countdown");
     tickSound(5);
     timer.current = setInterval(() => {
