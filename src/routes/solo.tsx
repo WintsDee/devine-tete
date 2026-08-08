@@ -6,7 +6,6 @@ import {
   Check,
   EyeOff,
   Keyboard,
-  Lightbulb,
   Loader2,
   Pause,
   Play,
@@ -71,7 +70,6 @@ function Solo() {
   const [count, setCount] = useState(5);
   const [frontLeft, setFrontLeft] = useState(FRONT_SECONDS);
   const [held, setHeld] = useState(false);
-  const [hintStep, setHintStep] = useState(0);
   const [busy, setBusy] = useState(false);
   const [sound, setSound] = useState(true);
   const [manualOpen, setManualOpen] = useState(false);
@@ -102,7 +100,6 @@ function Solo() {
     setCount(5);
     setFrontLeft(FRONT_SECONDS);
     setHeld(false);
-    setHintStep(0);
     setPhase("countdown");
     tickSound(5);
     timer.current = setInterval(() => {
@@ -177,17 +174,15 @@ function Solo() {
           {held ? "En pause" : `Caché dans ${frontLeft} s`}
         </p>
         <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10">
-          {hintStep >= 1 ? (
-            <motion.p
-              key={word.category}
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="text-center text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground"
-            >
-              {word.category}
-            </motion.p>
-          ) : null}
+          <motion.p
+            key={word.category}
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="text-center text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground"
+          >
+            {word.category}
+          </motion.p>
           <motion.p
             key={word.text}
             initial={{ opacity: 0, scale: 0.9 }}
@@ -197,29 +192,13 @@ function Solo() {
           >
             {word.text}
           </motion.p>
-          {word.hint && hintStep >= 2 ? (
-            <motion.p
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="max-w-md text-center text-sm text-muted-foreground [text-wrap:balance]"
-            >
+          {word.hint ? (
+            <p className="max-w-md text-center text-sm text-muted-foreground [text-wrap:balance]">
               {word.hint}
-            </motion.p>
+            </p>
           ) : null}
         </div>
-        <div className="grid grid-cols-5 gap-1 px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <Button
-            variant="ghost"
-            onClick={() => {
-              vibrate("tap");
-              setHintStep((current) => Math.min(current + 1, word.hint ? 2 : 1));
-            }}
-            disabled={hintStep >= (word.hint ? 2 : 1)}
-            className={`h-14 flex-col gap-1 rounded-xl text-[11px] font-semibold hover:text-foreground ${hintStep > 0 ? "text-primary" : "text-muted-foreground"}`}
-          >
-            <Lightbulb className="size-4" />
-            Indice
-          </Button>
+        <div className="grid grid-cols-4 gap-2 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <Button
             variant="ghost"
             onClick={() => {
