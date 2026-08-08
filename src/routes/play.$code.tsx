@@ -313,11 +313,14 @@ function Play() {
         <div className="grid grid-cols-3 gap-2 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <Button
             variant="ghost"
-            onClick={() => setPhase("front")}
+            onClick={() => {
+              vibrate("tap");
+              startCountdown();
+            }}
             className="h-14 flex-col gap-1 rounded-xl text-[11px] font-semibold text-muted-foreground hover:text-foreground"
           >
             <RotateCcw className="size-4" />
-            Revoir 10 s
+            Revoir le mot
           </Button>
           <Button
             variant="ghost"
