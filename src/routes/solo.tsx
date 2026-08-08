@@ -175,6 +175,15 @@ function Solo() {
         </p>
         <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10">
           <motion.p
+            key={word.category}
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="text-center text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground"
+          >
+            {word.category}
+          </motion.p>
+          <motion.p
             key={word.text}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}

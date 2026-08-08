@@ -112,6 +112,9 @@ export function ChronoRound({ durationSeconds, label, onFinish }: Props) {
             transition={{ duration: 0.22 }}
             className="flex flex-col items-center gap-4"
           >
+            <p className="text-center text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground">
+              {word.category}
+            </p>
             <span
               className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-widest ${
                 value === 1
