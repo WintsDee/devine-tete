@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useWakeLock } from "@/hooks/use-wake-lock";
 import { pickWord } from "@/lib/game";
 import { endSound, scoreSound, skipSound, tickSound, unlockAudio } from "@/lib/sfx";
+import { vibrate } from "@/lib/haptics";
 import { VALUE_LABEL, wordValue } from "@/lib/difficulty";
 import type { BankWord } from "@/lib/words-types";
 import type { FoundWord, RoundResult } from "@/lib/chrono";
