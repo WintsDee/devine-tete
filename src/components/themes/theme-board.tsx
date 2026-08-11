@@ -1,11 +1,12 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Timer } from "lucide-react";
+import { ArrowLeft, Sparkles, Timer, X } from "lucide-react";
 
 import { vibrate } from "@/lib/haptics";
 import type { Theme } from "@/lib/themes";
 import { themeColor, themeIcon } from "@/lib/themes/icons";
 
-export type TeamState = { id: string; name: string; points: number };
+export type TeamState = { id: string; name: string; points: number; jokers: number };
 
 /** Grid of the 6 drawn themes: the active team picks one, played ones are greyed out. */
 export function ThemeBoard({
@@ -16,6 +17,7 @@ export function ThemeBoard({
   round,
   rounds,
   onPick,
+  onJoker,
   onBack,
 }: {
   themes: Theme[];
@@ -25,10 +27,13 @@ export function ThemeBoard({
   round: number;
   rounds: number;
   onPick: (theme: Theme) => void;
+  onJoker: (theme: Theme) => void;
   onBack: () => void;
 }) {
+  const [swapping, setSwapping] = useState(false);
   const activeTeam = teams.find((team) => team.id === activeTeamId);
   const ranking = [...teams].sort((a, b) => b.points - a.points);
+  const canJoker = (activeTeam?.jokers ?? 0) > 0;
 
   return (
     <main className="party-gradient flex min-h-[100dvh] flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6">
@@ -62,11 +67,35 @@ export function ThemeBoard({
           {activeTeam?.name ?? "—"}
         </p>
         <p className="mt-2 flex items-center justify-center gap-2 text-xs font-semibold text-muted-foreground">
-          <Timer className="size-4" /> Choisissez votre thème · 1 min 30
+          <Timer className="size-4" />
+          {swapping ? "Touchez le thème à remplacer" : "Choisissez votre thème · 1 min 30"}
         </p>
       </motion.section>
 
-      <section className="mt-5 grid flex-1 grid-cols-2 gap-3 content-start">
+      <button
+        type="button"
+        disabled={!canJoker}
+        onClick={() => {
+          vibrate("tap");
+          setSwapping((current) => !current);
+        }}
+        className={`mt-3 flex h-12 items-center justify-center gap-2 rounded-2xl border text-sm font-bold ${
+          !canJoker
+            ? "border-border bg-card/30 text-muted-foreground"
+            : swapping
+              ? "border-primary bg-card text-foreground"
+              : "border-primary bg-card/70 text-foreground"
+        }`}
+      >
+        {swapping ? <X className="size-4" /> : <Sparkles className="size-4" />}
+        {!canJoker
+          ? "Joker utilisé"
+          : swapping
+            ? "Annuler le joker"
+            : "Joker · changer un thème"}
+      </button>
+
+      <section className="mt-4 grid flex-1 grid-cols-2 gap-3 content-start">
         {themes.map((theme, index) => {
           const used = usedIds.includes(theme.id);
           const Icon = themeIcon(theme.id);
@@ -81,12 +110,19 @@ export function ThemeBoard({
               whileTap={{ scale: used ? 1 : 0.95 }}
               onClick={() => {
                 vibrate("tap");
+                if (swapping) {
+                  setSwapping(false);
+                  onJoker(theme);
+                  return;
+                }
                 onPick(theme);
               }}
               className={`flex min-h-28 flex-col items-center justify-center gap-2 rounded-3xl border px-3 py-4 text-center ${
                 used
                   ? "border-border bg-card/30 text-muted-foreground line-through"
-                  : "border-border bg-card/70 text-foreground"
+                  : swapping
+                    ? "border-primary bg-card/70 text-foreground"
+                    : "border-border bg-card/70 text-foreground"
               }`}
             >
               <Icon
@@ -113,7 +149,12 @@ export function ThemeBoard({
                 team.id === activeTeamId ? "border-primary bg-card/80" : "border-border bg-card/50"
               }`}
             >
-              <span className="min-w-0 truncate font-medium">{team.name}</span>
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="truncate font-medium">{team.name}</span>
+                {team.jokers > 0 ? (
+                  <Sparkles className="size-4 shrink-0 text-primary" aria-label="joker restant" />
+                ) : null}
+              </span>
               <span className="text-word font-display text-xl font-bold">{team.points}</span>
             </li>
           ))}
