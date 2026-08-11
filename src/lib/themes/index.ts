@@ -10,6 +10,7 @@ import { EXTRA_C } from "@/lib/themes/extra-c";
 import { EXTRA_D } from "@/lib/themes/extra-d";
 import { EXTRA_E } from "@/lib/themes/extra-e";
 import { EXTRA_F } from "@/lib/themes/extra-f";
+import { normalizeWordKey } from "@/lib/word-key";
 
 export type { Theme };
 
@@ -27,10 +28,14 @@ const EXTRAS: Record<string, BankWord[]> = {
 /** Merges the extra word packs into a theme and drops duplicated texts. */
 function withExtras(theme: Theme): Theme {
   const merged = [...theme.words, ...(EXTRAS[theme.id] ?? [])];
-  const words = merged.filter(
-    (word, index) =>
-      merged.findIndex((other) => other.text.toLowerCase() === word.text.toLowerCase()) === index,
-  );
+  const seen = new Set<string>();
+  const words: BankWord[] = [];
+  for (const word of merged) {
+    const key = normalizeWordKey(word.text);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    words.push(word);
+  }
   return { ...theme, words };
 }
 
