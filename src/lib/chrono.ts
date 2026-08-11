@@ -50,11 +50,20 @@ export type ChronoScore = {
 
 export type FoundWord = { text: string; value: number };
 
-export type RoundResult = { points: number; found: FoundWord[]; skipped: string[] };
+export type RoundResult = {
+  points: number;
+  found: FoundWord[];
+  skipped: string[];
+  /** Every word shown during the turn, including the one on screen at the buzzer. */
+  seen?: string[];
+};
 
 export const TEAM_COLORS = ["yellow", "pink", "cyan", "lime", "orange", "violet"] as const;
 
 export const CHRONO_SECONDS = 180;
+
+/** Turn length for the "Thèmes par équipes" mode: 1 min 30. */
+export const THEME_SECONDS = 90;
 
 function auth(roomId: string): Auth {
   const found = authForRoom(roomId);

@@ -16,11 +16,11 @@ export function TeamSetup({
   onStart,
 }: {
   onBack: () => void;
-  onStart: (teams: TeamDraft[], rounds: number) => void;
+  onStart: (teams: TeamDraft[]) => void;
 }) {
   const [count, setCount] = useState(2);
   const [names, setNames] = useState(DEFAULT_NAMES);
-  const [rounds, setRounds] = useState(3);
+  const rounds = count === 2 ? 3 : 2;
 
   const teams = names.slice(0, count).map((name, index) => ({
     id: `team-${index + 1}`,
@@ -100,30 +100,19 @@ export function TeamSetup({
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground">
             Manches
           </p>
-          <div className="mt-3 grid grid-cols-3 gap-3">
-            {[1, 2, 3].map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => {
-                  vibrate("tap");
-                  setRounds(value);
-                }}
-                className={`h-14 rounded-2xl border text-base font-bold transition-colors ${
-                  rounds === value
-                    ? "border-primary bg-card text-foreground"
-                    : "border-border bg-card/50 text-muted-foreground"
-                }`}
-              >
-                {value}
-              </button>
-            ))}
+          <div className="mt-3 rounded-2xl border border-border bg-card/50 px-4 py-4 text-center">
+            <p className="text-word font-display text-2xl font-bold">
+              {rounds} manches · 6 thèmes
+            </p>
+            <p className="mt-1 text-xs font-medium text-muted-foreground">
+              1 min 30 par équipe, tous les thèmes tirés au sort seront joués.
+            </p>
           </div>
         </section>
       </motion.div>
 
       <Button
-        onClick={() => onStart(teams, rounds)}
+        onClick={() => onStart(teams)}
         className="mx-auto mt-6 h-16 w-full max-w-sm rounded-2xl text-base font-bold"
       >
         <Play className="size-5" />

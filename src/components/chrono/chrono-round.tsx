@@ -22,28 +22,34 @@ type Props = {
   label?: string;
   /** When set, words are drawn inside this theme instead of the full bank. */
   theme?: Theme;
+  /** Words already played earlier in the game: they will never come back. */
+  excludeWords?: string[];
   onFinish: (result: RoundResult) => void;
 };
 
 /** A timed guessing turn: the holder reads the word aloud and taps Trouvé or Passer. */
-export function ChronoRound({ durationSeconds, label, theme, onFinish }: Props) {
-  const seen = useRef<string[]>([]);
-  const draw = useCallback((): BankWord => {
+export function ChronoRound({ durationSeconds, label, theme, excludeWords, onFinish }: Props) {
+  const seen = useRef<string[]>(excludeWords ? [...excludeWords] : []);
+  const draw = useCallback((): BankWord | null => {
     if (!theme) return pickWord();
     const next = pickThemeWord(theme, seen.current);
+    if (!next) return null;
     seen.current = [...seen.current, next.text];
     return next;
   }, [theme]);
   const [left, setLeft] = useState(durationSeconds);
-  const [word, setWord] = useState<BankWord>(() =>
-    theme ? pickThemeWord(theme, []) : pickWord(),
-  );
+  const [word, setWord] = useState<BankWord | null>(() => {
+    if (!theme) return pickWord();
+    const first = pickThemeWord(theme, seen.current);
+    if (first) seen.current = [...seen.current, first.text];
+    return first;
+  });
   const [points, setPoints] = useState(0);
   const [flash, setFlash] = useState<"found" | "skip" | null>(null);
   const found = useRef<FoundWord[]>([]);
   const skipped = useRef<string[]>([]);
   const done = useRef(false);
-  const value = wordValue(word);
+  const value = word ? wordValue(word) : 1;
 
   useWakeLock(true);
 
@@ -55,8 +61,13 @@ export function ChronoRound({ durationSeconds, label, theme, onFinish }: Props) 
       points: found.current.reduce((total, item) => total + item.value, 0),
       found: found.current,
       skipped: skipped.current,
+      seen: seen.current,
     });
   }, [onFinish]);
+
+  useEffect(() => {
+    if (word === null) finish();
+  }, [word, finish]);
 
   useEffect(() => {
     void unlockAudio();
@@ -76,7 +87,7 @@ export function ChronoRound({ durationSeconds, label, theme, onFinish }: Props) 
   }, [finish]);
 
   const next = (kind: "found" | "skip") => {
-    if (done.current) return;
+    if (done.current || !word) return;
     if (kind === "found") {
       found.current = [...found.current, { text: word.text, value }];
       setPoints((current) => current + value);
@@ -116,6 +127,7 @@ export function ChronoRound({ durationSeconds, label, theme, onFinish }: Props) 
 
       <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-8 text-center">
         <AnimatePresence mode="popLayout">
+          {word ? (
           <motion.div
             key={word.text}
             initial={{ opacity: 0, y: 24, scale: 0.94 }}
@@ -145,6 +157,11 @@ export function ChronoRound({ durationSeconds, label, theme, onFinish }: Props) 
               </p>
             ) : null}
           </motion.div>
+          ) : (
+            <p className="text-sm font-semibold text-muted-foreground">
+              Thème épuisé, on compte les points…
+            </p>
+          )}
         </AnimatePresence>
       </div>
 

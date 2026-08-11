@@ -32,10 +32,10 @@ export function drawThemes(count: number, excludeIds: string[] = []): Theme[] {
   return [...fresh, ...fallback].slice(0, count);
 }
 
-/** Picks a word inside a theme, avoiding the ones already seen this turn. */
-export function pickThemeWord(theme: Theme, seen: string[] = []): BankWord {
+/** Picks a word inside a theme, never repeating one already seen. Null when exhausted. */
+export function pickThemeWord(theme: Theme, seen: string[] = []): BankWord | null {
   const seenSet = new Set(seen.map((text) => text.toLowerCase()));
   const remaining = theme.words.filter((word) => !seenSet.has(word.text.toLowerCase()));
-  const pool = remaining.length > 0 ? remaining : theme.words;
-  return pool[Math.floor(Math.random() * pool.length)]!;
+  if (remaining.length === 0) return null;
+  return remaining[Math.floor(Math.random() * remaining.length)]!;
 }
