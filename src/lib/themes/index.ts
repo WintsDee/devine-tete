@@ -63,6 +63,13 @@ export function drawThemes(count: number, excludeIds: string[] = []): Theme[] {
 }
 
 /** Picks a word inside a theme, never repeating one already seen. Null when exhausted. */
+export function drawOneTheme(excludeIds: string[] = []): Theme | null {
+  return drawThemes(1, excludeIds)[0] ?? null;
+}
+
+/** Total number of themes in the bank. */
+export const THEME_TOTAL = THEMES.length;
+
 export function pickThemeWord(theme: Theme, seen: string[] = []): BankWord | null {
   const seenSet = new Set(seen.map((text) => text.toLowerCase()));
   const remaining = theme.words.filter((word) => !seenSet.has(word.text.toLowerCase()));
