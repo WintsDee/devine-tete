@@ -4,15 +4,38 @@ import { THEMES_1 } from "@/lib/themes/batch1";
 import { THEMES_2 } from "@/lib/themes/batch2";
 import { THEMES_3 } from "@/lib/themes/batch3";
 import { THEMES_4 } from "@/lib/themes/batch4";
+import { EXTRA_A } from "@/lib/themes/extra-a";
+import { EXTRA_C } from "@/lib/themes/extra-c";
+import { EXTRA_D } from "@/lib/themes/extra-d";
+import { EXTRA_E } from "@/lib/themes/extra-e";
+import { EXTRA_F } from "@/lib/themes/extra-f";
 
 export type { Theme };
 
 const ALL = [...THEMES_1, ...THEMES_2, ...THEMES_3, ...THEMES_4];
 
+const EXTRAS: Record<string, BankWord[]> = {
+  ...EXTRA_A,
+  ...EXTRA_C,
+  ...EXTRA_D,
+  ...EXTRA_E,
+  ...EXTRA_F,
+};
+
+/** Merges the extra word packs into a theme and drops duplicated texts. */
+function withExtras(theme: Theme): Theme {
+  const merged = [...theme.words, ...(EXTRAS[theme.id] ?? [])];
+  const words = merged.filter(
+    (word, index) =>
+      merged.findIndex((other) => other.text.toLowerCase() === word.text.toLowerCase()) === index,
+  );
+  return { ...theme, words };
+}
+
 /** Deduplicated theme bank (by id). */
 export const THEMES: Theme[] = ALL.filter(
   (theme, index) => ALL.findIndex((other) => other.id === theme.id) === index,
-);
+).map(withExtras);
 
 function shuffle<T>(items: T[]): T[] {
   const copy = [...items];
