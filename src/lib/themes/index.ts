@@ -5,6 +5,7 @@ import { THEMES_2 } from "@/lib/themes/batch2";
 import { THEMES_3 } from "@/lib/themes/batch3";
 import { THEMES_4 } from "@/lib/themes/batch4";
 import { EXTRA_A } from "@/lib/themes/extra-a";
+import { EXTRA_B } from "@/lib/themes/extra-b";
 import { EXTRA_C } from "@/lib/themes/extra-c";
 import { EXTRA_D } from "@/lib/themes/extra-d";
 import { EXTRA_E } from "@/lib/themes/extra-e";
@@ -16,6 +17,7 @@ const ALL = [...THEMES_1, ...THEMES_2, ...THEMES_3, ...THEMES_4];
 
 const EXTRAS: Record<string, BankWord[]> = {
   ...EXTRA_A,
+  ...EXTRA_B,
   ...EXTRA_C,
   ...EXTRA_D,
   ...EXTRA_E,
