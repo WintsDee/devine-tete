@@ -10,8 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ChronoRouteImport } from './routes/chrono'
 import { Route as SoloRouteImport } from './routes/solo'
+import { Route as ThemesRouteImport } from './routes/themes'
 import { Route as PlayCodeRouteImport } from './routes/play.$code'
 import { Route as RoomCodeRouteImport } from './routes/room.$code'
 import { Route as RoomCodeChronoRouteImport } from './routes/room.$code_.chrono'
@@ -21,14 +21,14 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ChronoRoute = ChronoRouteImport.update({
-  id: '/chrono',
-  path: '/chrono',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SoloRoute = SoloRouteImport.update({
   id: '/solo',
   path: '/solo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ThemesRoute = ThemesRouteImport.update({
+  id: '/themes',
+  path: '/themes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlayCodeRoute = PlayCodeRouteImport.update({
@@ -49,16 +49,16 @@ const RoomCodeChronoRoute = RoomCodeChronoRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/chrono': typeof ChronoRoute
   '/solo': typeof SoloRoute
+  '/themes': typeof ThemesRoute
   '/play/$code': typeof PlayCodeRoute
   '/room/$code': typeof RoomCodeRoute
   '/room/$code/chrono': typeof RoomCodeChronoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/chrono': typeof ChronoRoute
   '/solo': typeof SoloRoute
+  '/themes': typeof ThemesRoute
   '/play/$code': typeof PlayCodeRoute
   '/room/$code': typeof RoomCodeRoute
   '/room/$code/chrono': typeof RoomCodeChronoRoute
@@ -66,8 +66,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/chrono': typeof ChronoRoute
   '/solo': typeof SoloRoute
+  '/themes': typeof ThemesRoute
   '/play/$code': typeof PlayCodeRoute
   '/room/$code': typeof RoomCodeRoute
   '/room/$code_/chrono': typeof RoomCodeChronoRoute
@@ -76,24 +76,24 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/chrono'
     | '/solo'
+    | '/themes'
     | '/play/$code'
     | '/room/$code'
     | '/room/$code/chrono'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/chrono'
     | '/solo'
+    | '/themes'
     | '/play/$code'
     | '/room/$code'
     | '/room/$code/chrono'
   id:
     | '__root__'
     | '/'
-    | '/chrono'
     | '/solo'
+    | '/themes'
     | '/play/$code'
     | '/room/$code'
     | '/room/$code_/chrono'
@@ -101,8 +101,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ChronoRoute: typeof ChronoRoute
   SoloRoute: typeof SoloRoute
+  ThemesRoute: typeof ThemesRoute
   PlayCodeRoute: typeof PlayCodeRoute
   RoomCodeRoute: typeof RoomCodeRoute
   RoomCodeChronoRoute: typeof RoomCodeChronoRoute
@@ -117,18 +117,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/chrono': {
-      id: '/chrono'
-      path: '/chrono'
-      fullPath: '/chrono'
-      preLoaderRoute: typeof ChronoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/solo': {
       id: '/solo'
       path: '/solo'
       fullPath: '/solo'
       preLoaderRoute: typeof SoloRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/themes': {
+      id: '/themes'
+      path: '/themes'
+      fullPath: '/themes'
+      preLoaderRoute: typeof ThemesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/play/$code': {
@@ -157,8 +157,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ChronoRoute: ChronoRoute,
   SoloRoute: SoloRoute,
+  ThemesRoute: ThemesRoute,
   PlayCodeRoute: PlayCodeRoute,
   RoomCodeRoute: RoomCodeRoute,
   RoomCodeChronoRoute: RoomCodeChronoRoute,
@@ -166,13 +166,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

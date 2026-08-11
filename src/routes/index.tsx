@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Martini, PartyPopper, Timer, Users, Zap } from "lucide-react";
+import { Loader2, Martini, PartyPopper, Users, UsersRound, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
