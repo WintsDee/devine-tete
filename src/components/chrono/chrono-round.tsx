@@ -7,6 +7,7 @@ import { useWakeLock } from "@/hooks/use-wake-lock";
 import { pickWord } from "@/lib/game";
 import { endSound, scoreSound, skipSound, tickSound, unlockAudio } from "@/lib/sfx";
 import { VALUE_LABEL, wordValue } from "@/lib/difficulty";
+import { pickThemeWord, type Theme } from "@/lib/themes";
 import type { BankWord } from "@/lib/words-types";
 import type { FoundWord, RoundResult } from "@/lib/chrono";
 
@@ -19,13 +20,24 @@ function format(seconds: number) {
 type Props = {
   durationSeconds: number;
   label?: string;
+  /** When set, words are drawn inside this theme instead of the full bank. */
+  theme?: Theme;
   onFinish: (result: RoundResult) => void;
 };
 
 /** A timed guessing turn: the holder reads the word aloud and taps Trouvé or Passer. */
-export function ChronoRound({ durationSeconds, label, onFinish }: Props) {
+export function ChronoRound({ durationSeconds, label, theme, onFinish }: Props) {
+  const seen = useRef<string[]>([]);
+  const draw = useCallback((): BankWord => {
+    if (!theme) return pickWord();
+    const next = pickThemeWord(theme, seen.current);
+    seen.current = [...seen.current, next.text];
+    return next;
+  }, [theme]);
   const [left, setLeft] = useState(durationSeconds);
-  const [word, setWord] = useState<BankWord>(() => pickWord());
+  const [word, setWord] = useState<BankWord>(() =>
+    theme ? pickThemeWord(theme, []) : pickWord(),
+  );
   const [points, setPoints] = useState(0);
   const [flash, setFlash] = useState<"found" | "skip" | null>(null);
   const found = useRef<FoundWord[]>([]);
@@ -75,7 +87,7 @@ export function ChronoRound({ durationSeconds, label, onFinish }: Props) {
     }
     setFlash(kind);
     setTimeout(() => setFlash(null), 220);
-    setWord(pickWord());
+    setWord(draw());
   };
 
   const progress = Math.max(0, Math.min(1, left / durationSeconds));
