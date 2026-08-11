@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Martini, PartyPopper, Timer, Users, Zap } from "lucide-react";
+import { Loader2, Martini, PartyPopper, Users, UsersRound, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -114,14 +114,17 @@ function Home() {
           <Zap className="size-5" />
         </Button>
 
-        <Button
-          variant="secondary"
-          onClick={() => void navigate({ to: "/chrono" })}
-          className="h-16 w-full justify-between rounded-2xl px-5 text-lg font-bold"
+        <button
+          type="button"
+          onClick={() => {
+            vibrate("tap");
+            void navigate({ to: "/themes" });
+          }}
+          className="theme-gradient flex h-16 w-full items-center justify-between rounded-2xl px-5 text-lg font-bold text-background shadow-glow transition-transform active:scale-[0.98]"
         >
-          Chrono 3 min
-          <Timer className="size-5" />
-        </Button>
+          Thèmes par équipes
+          <UsersRound className="size-5" />
+        </button>
 
         {mode === "idle" ? (
           <button
