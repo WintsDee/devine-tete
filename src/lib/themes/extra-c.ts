@@ -267,4 +267,4 @@ export const EXTRA_C: Record<string, BankWord[]> = {
     { text: "City Girls", category: "Stars du rap féminin", level: 2, hint: "Duo féminin de rap américain formé en 2017, toujours actif" },
     { text: "Bia", category: "Stars du rap féminin", level: 3, hint: "Rappeuse américaine remarquée dans un featuring avec Russ, vivante" },
     { text: "Salt-N-Pepa", category: "Stars du rap féminin", level: 2, hint: "Trio féminin pionnier du rap américain dès le milieu des années 1980" },
-  ],
+  ],};
