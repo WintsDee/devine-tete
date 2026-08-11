@@ -3,6 +3,7 @@ import { ArrowLeft, Timer } from "lucide-react";
 
 import { vibrate } from "@/lib/haptics";
 import type { Theme } from "@/lib/themes";
+import { themeColor, themeIcon } from "@/lib/themes/icons";
 
 export type TeamState = { id: string; name: string; points: number };
 
@@ -61,13 +62,14 @@ export function ThemeBoard({
           {activeTeam?.name ?? "—"}
         </p>
         <p className="mt-2 flex items-center justify-center gap-2 text-xs font-semibold text-muted-foreground">
-          <Timer className="size-4" /> Choisissez votre thème · 3 minutes
+          <Timer className="size-4" /> Choisissez votre thème · 1 min 30
         </p>
       </motion.section>
 
       <section className="mt-5 grid flex-1 grid-cols-2 gap-3 content-start">
         {themes.map((theme, index) => {
           const used = usedIds.includes(theme.id);
+          const Icon = themeIcon(theme.id);
           return (
             <motion.button
               key={theme.id}
@@ -87,9 +89,10 @@ export function ThemeBoard({
                   : "border-border bg-card/70 text-foreground"
               }`}
             >
-              <span className="text-2xl" aria-hidden>
-                {theme.emoji}
-              </span>
+              <Icon
+                className={`size-8 ${used ? "text-muted-foreground" : themeColor(theme.id)}`}
+                aria-hidden
+              />
               <span className="text-sm font-bold leading-tight [text-wrap:balance]">
                 {theme.label}
               </span>

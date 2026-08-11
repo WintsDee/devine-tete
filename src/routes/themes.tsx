@@ -7,7 +7,7 @@ import { ChronoRound } from "@/components/chrono/chrono-round";
 import { FinalStandings } from "@/components/themes/final-standings";
 import { TeamSetup, type TeamDraft } from "@/components/themes/team-setup";
 import { ThemeBoard, type TeamState } from "@/components/themes/theme-board";
-import { CHRONO_SECONDS, type RoundResult } from "@/lib/chrono";
+import { THEME_SECONDS, type RoundResult } from "@/lib/chrono";
 import { drawThemes, type Theme } from "@/lib/themes";
 import { unlockAudio } from "@/lib/sfx";
 import { vibrate } from "@/lib/haptics";
@@ -19,12 +19,12 @@ export const Route = createFileRoute("/themes")({
       {
         name: "description",
         content:
-          "Deux ou trois équipes, un thème tiré au sort et 3 minutes pour marquer le maximum de points. Classement final et revanche immédiate.",
+          "Deux ou trois équipes, un thème tiré au sort et 1 min 30 pour marquer le maximum de points. Classement final et revanche immédiate.",
       },
       { property: "og:title", content: "Thèmes par équipes — Devine Tête" },
       {
         property: "og:description",
-        content: "Choisissez un thème, 3 minutes par équipe, le meilleur score gagne la partie.",
+        content: "Choisissez un thème, 1 min 30 par équipe, le meilleur score gagne la partie.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -46,18 +46,20 @@ function ThemesMode() {
   const [usedIds, setUsedIds] = useState<string[]>([]);
   const [theme, setTheme] = useState<Theme | null>(null);
   const [result, setResult] = useState<RoundResult | null>(null);
+  const [seenWords, setSeenWords] = useState<string[]>([]);
 
   const goHome = () => void navigate({ to: "/" });
 
-  const startGame = (drafts: TeamDraft[], totalRounds: number) => {
+  const startGame = (drafts: TeamDraft[]) => {
     void unlockAudio();
     vibrate("tap");
     setTeams(drafts.map((draft) => ({ ...draft, points: 0 })));
-    setRounds(totalRounds);
+    setRounds(drafts.length === 2 ? 3 : 2);
     setRound(1);
     setTurn(0);
     setThemes(drawThemes(THEME_COUNT));
     setUsedIds([]);
+    setSeenWords([]);
     setPhase("board");
   };
 
@@ -67,6 +69,7 @@ function ThemesMode() {
     setTurn(0);
     setThemes(drawThemes(THEME_COUNT));
     setUsedIds([]);
+    setSeenWords([]);
     setPhase("board");
   };
 
@@ -106,11 +109,13 @@ function ThemesMode() {
     const activeTeam = teams[turn];
     return (
       <ChronoRound
-        durationSeconds={CHRONO_SECONDS}
+        durationSeconds={THEME_SECONDS}
         theme={theme}
+        excludeWords={seenWords}
         label={`${activeTeam?.name ?? ""} · ${theme.label}`}
         onFinish={(round_) => {
           setResult(round_);
+          if (round_.seen) setSeenWords(round_.seen);
           setTeams((current) =>
             current.map((team, index) =>
               index === turn ? { ...team, points: team.points + round_.points } : team,
