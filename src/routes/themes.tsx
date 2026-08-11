@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { ChronoResult } from "@/components/chrono/chrono-result";
 import { ChronoRound } from "@/components/chrono/chrono-round";
 import { FinalStandings } from "@/components/themes/final-standings";
+import { StartCountdown } from "@/components/themes/start-countdown";
 import { TeamSetup, type TeamDraft } from "@/components/themes/team-setup";
 import { ThemeBoard, type TeamState } from "@/components/themes/theme-board";
 import { THEME_SECONDS, type RoundResult } from "@/lib/chrono";
-import { drawThemes, type Theme } from "@/lib/themes";
+import { drawOneTheme, drawThemes, THEME_TOTAL, type Theme } from "@/lib/themes";
 import { unlockAudio } from "@/lib/sfx";
 import { vibrate } from "@/lib/haptics";
 
@@ -37,40 +38,71 @@ const THEME_COUNT = 6;
 
 function ThemesMode() {
   const navigate = useNavigate();
-  const [phase, setPhase] = useState<"setup" | "board" | "playing" | "result" | "final">("setup");
+  const [phase, setPhase] = useState<
+    "setup" | "board" | "countdown" | "playing" | "result" | "final"
+  >("setup");
   const [teams, setTeams] = useState<TeamState[]>([]);
   const [rounds, setRounds] = useState(3);
   const [round, setRound] = useState(1);
   const [turn, setTurn] = useState(0);
   const [themes, setThemes] = useState<Theme[]>([]);
   const [usedIds, setUsedIds] = useState<string[]>([]);
+  const [seenIds, setSeenIds] = useState<string[]>([]);
   const [theme, setTheme] = useState<Theme | null>(null);
   const [result, setResult] = useState<RoundResult | null>(null);
   const [seenWords, setSeenWords] = useState<string[]>([]);
 
   const goHome = () => void navigate({ to: "/" });
 
+  /** Draws fresh themes, remembering them for the whole session (no repeats between games). */
+  const freshThemes = (count: number, keepIds: string[] = []) => {
+    setSeenIds((current) => {
+      const memory = current.length + count > THEME_TOTAL ? [...keepIds] : current;
+      const picked = drawThemes(count, memory);
+      setThemes(picked);
+      return [...memory, ...picked.map((item) => item.id)];
+    });
+  };
+
   const startGame = (drafts: TeamDraft[]) => {
     void unlockAudio();
     vibrate("tap");
-    setTeams(drafts.map((draft) => ({ ...draft, points: 0 })));
+    setTeams(drafts.map((draft) => ({ ...draft, points: 0, jokers: 1 })));
     setRounds(drafts.length === 2 ? 3 : 2);
     setRound(1);
     setTurn(0);
-    setThemes(drawThemes(THEME_COUNT));
+    freshThemes(THEME_COUNT);
     setUsedIds([]);
     setSeenWords([]);
     setPhase("board");
   };
 
   const replay = () => {
-    setTeams((current) => current.map((team) => ({ ...team, points: 0 })));
+    setTeams((current) => current.map((team) => ({ ...team, points: 0, jokers: 1 })));
     setRound(1);
     setTurn(0);
-    setThemes(drawThemes(THEME_COUNT));
+    freshThemes(THEME_COUNT);
     setUsedIds([]);
     setSeenWords([]);
     setPhase("board");
+  };
+
+  /** Replaces one theme with a never-seen one and consumes the active team's joker. */
+  const useJoker = (target: Theme) => {
+    const keepIds = themes.filter((item) => item.id !== target.id).map((item) => item.id);
+    const replacement = drawOneTheme([...seenIds, ...keepIds]);
+    if (!replacement) return;
+    setThemes((current) =>
+      current.map((item) => (item.id === target.id ? replacement : item)),
+    );
+    setSeenIds((current) =>
+      current.includes(replacement.id) ? current : [...current, replacement.id],
+    );
+    setTeams((current) =>
+      current.map((team, index) =>
+        index === turn ? { ...team, jokers: Math.max(0, team.jokers - 1) } : team,
+      ),
+    );
   };
 
   /** Stores the turn score, greys the theme out and hands over to the next team. */
@@ -78,7 +110,7 @@ function ThemesMode() {
     const playedId = theme?.id;
     const nextUsed = playedId ? [...usedIds, playedId] : usedIds;
     if (nextUsed.length >= themes.length) {
-      setThemes(drawThemes(THEME_COUNT, nextUsed));
+      freshThemes(THEME_COUNT);
       setUsedIds([]);
     } else {
       setUsedIds(nextUsed);
@@ -103,6 +135,16 @@ function ThemesMode() {
 
   if (phase === "setup") {
     return <TeamSetup onBack={goHome} onStart={startGame} />;
+  }
+
+  if (phase === "countdown" && theme) {
+    return (
+      <StartCountdown
+        teamName={teams[turn]?.name ?? ""}
+        themeLabel={theme.label}
+        onDone={() => setPhase("playing")}
+      />
+    );
   }
 
   if (phase === "playing" && theme) {
@@ -155,8 +197,9 @@ function ThemesMode() {
       onPick={(picked) => {
         void unlockAudio();
         setTheme(picked);
-        setPhase("playing");
+        setPhase("countdown");
       }}
+      onJoker={useJoker}
       onBack={goHome}
     />
   );
