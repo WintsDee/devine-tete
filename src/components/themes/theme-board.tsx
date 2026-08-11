@@ -76,7 +76,7 @@ export function ThemeBoard({
               initial={{ opacity: 0, scale: 0.94 }}
               animate={{ opacity: used ? 0.35 : 1, scale: 1 }}
               transition={{ delay: index * 0.05 }}
-              whileTap={used ? undefined : { scale: 0.95 }}
+              whileTap={{ scale: used ? 1 : 0.95 }}
               onClick={() => {
                 vibrate("tap");
                 onPick(theme);
