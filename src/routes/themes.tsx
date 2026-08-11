@@ -56,12 +56,10 @@ function ThemesMode() {
 
   /** Draws fresh themes, remembering them for the whole session (no repeats between games). */
   const freshThemes = (count: number, keepIds: string[] = []) => {
-    setSeenIds((current) => {
-      const memory = current.length + count > THEME_TOTAL ? [...keepIds] : current;
-      const picked = drawThemes(count, memory);
-      setThemes(picked);
-      return [...memory, ...picked.map((item) => item.id)];
-    });
+    const memory = seenIds.length + count > THEME_TOTAL ? [...keepIds] : seenIds;
+    const picked = drawThemes(count, memory);
+    setThemes(picked);
+    setSeenIds([...memory, ...picked.map((item) => item.id)]);
   };
 
   const startGame = (drafts: TeamDraft[]) => {
